@@ -127,6 +127,6 @@ class Player:
         pygame.draw.circle(screen, WHITE, (int(self.x), int(self.y)), self.radius, 2)
 
         if self.carrying:
-            img = pygame.transform.scale(self.carrying.image, (16, 16))
+            img = pygame.transform.scale(self.carrying.image, (64, 64))
             rect = img.get_rect(center=(int(self.x), int(self.y - 25)))
             screen.blit(img, rect)
