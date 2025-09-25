@@ -1,35 +1,68 @@
 import math
-
 import pygame
 
-
 class Footprint:
-    def __init__(self, x, y, brightness=1.0):
+    foot_toggle = True  # Wisselt tussen links en rechts
+
+    def __init__(self, x, y, player_x=None, player_y=None, scale=0.5, brightness=1.0):
         self.x = x
         self.y = y
+        self.scale = scale
         self.brightness = brightness
-        self.max_brightness = brightness
-        self.fade_speed = 0.01  # How fast footprints fade
-        self.radius = 10
+        self.fade_speed = 0.01
         self.visible = True
-        
+        self.radius = 20  # voorkomt crash in main
+
+        # Links of rechts voet (kan je eventueel behouden voor variatie)
+        self.is_left = Footprint.foot_toggle
+        Footprint.foot_toggle = not Footprint.foot_toggle
+
+        # Kleur van de voetafdruk (bruin)
+        self.color = (139, 69, 19)
+
+        # Rotatie berekenen
+        if player_x is not None and player_y is not None:
+            # Richt hiel naar speler
+            dx = player_x - x
+            dy = player_y - y
+            self.rotation = math.degrees(math.atan2(-dy, dx))
+        else:
+            # Valt terug op standaard rotatie (0 graden)
+            self.rotation = 0
+
     def update(self):
         self.brightness -= self.fade_speed
         return self.brightness > 0
-        
+
     def draw(self, screen, player_x, player_y, vision_radius):
-        # Check if footprint is within player's vision
-        dist_to_player = math.sqrt((self.x - player_x)**2 + (self.y - player_y)**2)
-        self.visible = dist_to_player <= vision_radius
-        
-        if self.brightness > 0 and self.visible:
-            alpha = int(255 * self.brightness)
-            color = (255, 255, 200, alpha)
-            
-            # Create a surface for the glowing effect
-            glow_surface = pygame.Surface((self.radius * 4, self.radius * 4), pygame.SRCALPHA)
-            pygame.draw.circle(glow_surface, color, (self.radius * 2, self.radius * 2), self.radius)
-            
-            # Draw the footprint
-            screen.blit(glow_surface, (self.x - self.radius * 2, self.y - self.radius * 2), 
-                       special_flags=pygame.BLEND_ALPHA_SDL2)
+        # Alleen tekenen als binnen zicht
+        dist = math.hypot(self.x - player_x, self.y - player_y)
+        self.visible = dist <= vision_radius
+        if not self.visible or self.brightness <= 0:
+            return
+
+        alpha = int(255 * self.brightness)
+        color = (*self.color, alpha)
+
+        # Surface voor voetafdruk
+        w = int(20 * self.scale)
+        h = int(40 * self.scale)
+        surf = pygame.Surface((w, h), pygame.SRCALPHA)
+
+        # Polygon teen + middenvoet
+        points = [
+            (w*0.3, h*0.2),
+            (w*0.7, h*0.2),
+            (w*0.8, h*0.6),
+            (w*0.2, h*0.6)
+        ]
+        pygame.draw.polygon(surf, color, points)
+
+        # Hiel
+        pygame.draw.ellipse(surf, color, (w*0.2, h*0.55, w*0.6, h*0.35))
+
+        # Rotatie zodat hiel naar speler wijst
+        surf = pygame.transform.rotate(surf, self.rotation)
+
+        # Teken op scherm
+        screen.blit(surf, (self.x - surf.get_width()//2, self.y - surf.get_height()//2))
