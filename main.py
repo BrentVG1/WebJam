@@ -43,6 +43,7 @@ class GameState(Enum):
 # Game class
 class HauntedKitchen:
     def __init__(self):
+        self.vision_radius = 250
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Haunted Kitchen")
         self.clock = pygame.time.Clock()
@@ -52,8 +53,7 @@ class HauntedKitchen:
         self.font_small = pygame.font.SysFont(None, 36)
         
         # Fog of war system
-        self.fog_of_war = FogOfWar(SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.vision_radius = 250
+        self.fog_of_war = FogOfWar(SCREEN_WIDTH, SCREEN_HEIGHT, self.vision_radius)
         
         self.reset_game()
         
@@ -133,7 +133,7 @@ class HauntedKitchen:
         self.player.update(keys)
         
         # Update fog of war
-        self.fog_of_war.update(self.player.x, self.player.y, self.stations)
+        # self.fog_of_war.update(self.player.x, self.player.y, self.stations)
         
         # Create footprints at intervals
         if self.player.footprint_timer >= self.player.footprint_interval:
@@ -249,39 +249,65 @@ class HauntedKitchen:
             text = self.font_small.render(line, True, WHITE)
             self.screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, 350 + i * 40))
             
+    def is_in_vision(self, x, y, radius=0):
+        """Check if an object is within the player's vision"""
+        distance = math.sqrt((x - self.player.x)**2 + (y - self.player.y)**2)
+        return distance <= self.vision_radius + radius
+    
     def draw_game(self):
-        # Draw kitchen background (simplified)
-        pygame.draw.rect(self.screen, DARK_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100))
-        pygame.draw.rect(self.screen, LIGHT_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100), 5)
+        # Clear screen with black (this will be our fog)
+        self.screen.fill(BLACK)
         
-        # Draw counter tops
-        pygame.draw.rect(self.screen, BROWN, (100, 150, SCREEN_WIDTH - 200, 80))
-        pygame.draw.rect(self.screen, BROWN, (100, SCREEN_HEIGHT - 230, SCREEN_WIDTH - 200, 80))
+        # 1. Draw visible portions of the kitchen background
+        self._draw_visible_background()
         
-        # Draw stations (always visible once discovered, but dim when not in current vision)
-        for station in self.stations:
-            station.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
-            
-        # Draw ingredients
-        for ingredient in self.ingredients:
-            ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
-            
-        # Draw footprints
-        for footprint in self.footprints:
-            footprint.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
-            
-        # Draw ghosts
-        for ghost in self.ghosts:
-            ghost.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
-            
-        # Draw player
-        self.player.draw(self.screen)
+        # 2. Only draw objects that are in vision
+        self._draw_visible_objects()
         
-        # Draw fog of war
-        self.fog_of_war.draw(self.screen)
+        # 3. Apply fog of war (for gradient edges)
+        self.fog_of_war.draw(self.screen, self.player.x, self.player.y)
         
-        # Draw UI (always visible)
+        # 4. Draw UI (always visible)
         self.draw_ui()
+    
+    def _draw_visible_background(self):
+        """Only draw the parts of the background that are visible"""
+        # Draw main kitchen area (simplified - in real game you'd want to clip this)
+        if self.is_in_vision(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, max(SCREEN_WIDTH, SCREEN_HEIGHT)):
+            pygame.draw.rect(self.screen, DARK_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100))
+            pygame.draw.rect(self.screen, LIGHT_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100), 5)
+            
+            # Draw counter tops if they might be visible
+            if self.is_in_vision(SCREEN_WIDTH//2, 150, SCREEN_WIDTH):
+                pygame.draw.rect(self.screen, BROWN, (100, 150, SCREEN_WIDTH - 200, 80))
+            if self.is_in_vision(SCREEN_WIDTH//2, SCREEN_HEIGHT - 230, SCREEN_WIDTH):
+                pygame.draw.rect(self.screen, BROWN, (100, SCREEN_HEIGHT - 230, SCREEN_WIDTH - 200, 80))
+    
+    def _draw_visible_objects(self):
+        """Only draw objects that are within the player's vision"""
+        # Draw stations in vision
+        for station in self.stations:
+            if self.is_in_vision(station.x + station.width//2, station.y + station.height//2, 
+                               max(station.width, station.height)):
+                station.draw(self.screen)
+        
+        # Draw ingredients in vision
+        for ingredient in self.ingredients:
+            if not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius):
+                ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+        
+        # Draw footprints in vision
+        for footprint in self.footprints:
+            if self.is_in_vision(footprint.x, footprint.y, footprint.radius):
+                footprint.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+        
+        # Draw ghosts in vision
+        for ghost in self.ghosts:
+            if self.is_in_vision(ghost.x, ghost.y, ghost.radius):
+                ghost.draw(self.screen)
+        
+        # Always draw player
+        self.player.draw(self.screen)
         
     def draw_ui(self):
         # Haunt level meter

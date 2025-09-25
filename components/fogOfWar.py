@@ -1,49 +1,36 @@
 import pygame
-
+import math
 
 class FogOfWar:
-    def __init__(self, screen_width, screen_height):
+    def __init__(self, screen_width, screen_height, vision_radius):
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.fog_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
-        self.clear_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
-        self.clear_surface.fill((0, 0, 0, 255))  # Fully opaque black
+        self.vision_radius = vision_radius
         
-        # Create a vision circle for the player
-        self.vision_radius = 250
-        self.vision_surface = pygame.Surface((self.vision_radius * 2, self.vision_radius * 2), pygame.SRCALPHA)
-        pygame.draw.circle(self.vision_surface, (0, 0, 0, 0), (self.vision_radius, self.vision_radius), self.vision_radius)
+    def draw(self, screen, player_x, player_y):
+        # Create a black surface with a hole for the player's vision
+        fog_surface = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+        fog_surface.fill((0, 0, 0, 255))  # Opaque black
         
-        # Memory of revealed areas (for persistent visibility of stations)
-        self.revealed_areas = set()
-        self.station_memory_radius = 100  # How much area around stations stays revealed
+        # Cut a hole for the vision area
+        vision_surface = pygame.Surface((self.vision_radius * 2, self.vision_radius * 2), pygame.SRCALPHA)
+        vision_surface.fill((0, 0, 0, 0))  # Transparent
         
-    def update(self, player_x, player_y, stations):
-        # Clear the fog surface
-        self.fog_surface.blit(self.clear_surface, (0, 0))
         
-        # Add permanently revealed areas around stations
-        for station in stations:
-            station_pos = (station.x + station.width//2, station.y + station.height//2)
-            self.revealed_areas.add(station_pos)
-            
-            # Create a circle around the station that stays revealed
-            station_surface = pygame.Surface((self.station_memory_radius * 2, self.station_memory_radius * 2), pygame.SRCALPHA)
-            pygame.draw.circle(station_surface, (0, 0, 0, 0), 
-                             (self.station_memory_radius, self.station_memory_radius), 
-                             self.station_memory_radius)
-            
-            # Apply the station's revealed area
-            self.fog_surface.blit(station_surface, 
-                                (station_pos[0] - self.station_memory_radius, 
-                                 station_pos[1] - self.station_memory_radius), 
-                                special_flags=pygame.BLEND_RGBA_MIN)
+        # Draw gradient circle
+        center = (self.vision_radius, self.vision_radius)
+        for radius in range(self.vision_radius, 0, -1):
+            # Smooth gradient from center to edge
+            alpha = int(255 * (radius / self.vision_radius))
+            color = (0, 0, 0,  alpha)  # More transparent in center
+            pygame.draw.circle(vision_surface, color, center, radius)
         
-        # Apply player's current vision
-        self.fog_surface.blit(self.vision_surface, 
-                            (player_x - self.vision_radius, 
-                             player_y - self.vision_radius), 
-                            special_flags=pygame.BLEND_RGBA_MIN)
-    
-    def draw(self, screen):
-        screen.blit(self.fog_surface, (0, 0))
+        # Apply the vision hole to the fog
+        fog_surface.blit(vision_surface, 
+                        (player_x - self.vision_radius, player_y - self.vision_radius),
+                        special_flags=pygame.BLEND_RGBA_MIN)
+        
+        pygame.draw.circle(fog_surface, (0, 0, 0), (int(player_x), int(player_y)), self.vision_radius + 110, width=111)
+        
+        # Draw the fog on top of everything
+        screen.blit(fog_surface, (0, 0))

@@ -72,12 +72,8 @@ class Ghost:
         self.x += (dx / dist) * self.speed
         self.y += (dy / dist) * self.speed
         
-    def draw(self, screen, player_x, player_y, vision_radius):
-        # Check if ghost is within player's vision
-        dist_to_player = math.sqrt((self.x - player_x)**2 + (self.y - player_y)**2)
-        self.visible = dist_to_player <= vision_radius
-        
-        if self.visible:
+    def draw(self, screen):
+    
             # Ghost body
             ghost_color = (200, 230, 255, 180) if self.type == GhostType.FOLLOWER else (255, 200, 230, 180)
             
