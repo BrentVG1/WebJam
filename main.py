@@ -3,6 +3,7 @@ import math
 import random
 import pygame
 
+from components.collisionObject import CollisionObject
 import constants  # use namespaced constants everywhere
 
 from components.SafeZone import SafeZone
@@ -22,6 +23,7 @@ pygame.mixer.init()
 # --- Userevents ---
 MUSIC_END = pygame.USEREVENT + 1
 pygame.mixer.music.set_endevent(MUSIC_END)
+
 
 class HauntedKitchen:
     def __init__(self):
@@ -47,23 +49,24 @@ class HauntedKitchen:
 
     def reset_game(self):
         # Create player
-        self.player = Player(constants.SCREEN_WIDTH // 2,
-                             constants.SCREEN_HEIGHT // 2)
+        self.player = Player(100,
+                             300)
         self.old_player_x = self.player.x
         self.old_player_y = self.player.y
 
         # Create footprints list
         self.footprints = []
-        
-        self.safe_zone = SafeZone(
-            0, constants.SCREEN_HEIGHT - 250, constants.SCREEN_WIDTH, 250)
 
+        self.safe_zone = SafeZone(
+            0, constants.SCREEN_HEIGHT - 150, constants.SCREEN_WIDTH, 150)
 
         # Create ghosts
         self.ghosts = [
             Ghost(100, 100, GhostType.FOLLOWER, self.safe_zone.height),
-            Ghost(constants.SCREEN_WIDTH - 100, 100, GhostType.FOLLOWER, self.safe_zone.height),
-            Ghost(100, constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER, self.safe_zone.height),
+            Ghost(constants.SCREEN_WIDTH - 100, 100,
+                  GhostType.FOLLOWER, self.safe_zone.height),
+            Ghost(100, constants.SCREEN_HEIGHT - 100,
+                  GhostType.PATROLLER, self.safe_zone.height),
             Ghost(constants.SCREEN_WIDTH - 100,
                   constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER, self.safe_zone.height),
         ]
@@ -84,11 +87,21 @@ class HauntedKitchen:
         self.stations = [
             CookingStation(200, 200, 150, 100, "chopping"),
             CookingStation(400, 200, 150, 100, "cooking"),
+            CookingStation(600, 200, 150, 100, "baking"),
             CookingStation(constants.SCREEN_WIDTH - 350,
                            200, 150, 100, "serving"),
         ]
 
-       
+        self.colliding_objects = [
+            CollisionObject(300, 250, constants.SCREEN_WIDTH - 600, 300),
+            CollisionObject(0, constants.SCREEN_HEIGHT -
+                            self.safe_zone.height - 5, 100, 10),
+            CollisionObject(200, constants.SCREEN_HEIGHT -
+                            self.safe_zone.height - 5, constants.SCREEN_WIDTH - 400, 10),
+               CollisionObject(constants.SCREEN_WIDTH - 100, constants.SCREEN_HEIGHT -
+                            self.safe_zone.height - 5, 100, 10),
+        ]
+
         # Game variables
         self.haunt_level = 0
         self.max_haunt_level = 100
@@ -146,7 +159,7 @@ class HauntedKitchen:
         keys = pygame.key.get_pressed()
 
         # Update player
-        self.player.update(keys)
+        self.player.update(keys, [obj.obj_rect for obj in self.colliding_objects])
 
         # Player handles ingredient pickup internally (single carry slot)
         if hasattr(self.player, "try_auto_pickup_nearby"):
@@ -169,14 +182,16 @@ class HauntedKitchen:
             dy = self.player.y - self.old_player_y
             if dx != 0 or dy != 0:
                 angle = math.degrees(math.atan2(-dy, dx))
-                self.footprints.append(Footprint(self.player.x, self.player.y, angle))
+                self.footprints.append(
+                    Footprint(self.player.x, self.player.y, angle))
             self.player.footprint_timer = 0
 
         # Update footprints (and remove faded ones)
         self.footprints = [f for f in self.footprints if f.update()]
-        
-        self.player_in_zone =  self.safe_zone.in_zone(self.player.x, self.player.y)
-        
+
+        self.player_in_zone = self.safe_zone.in_zone(
+            self.player.x, self.player.y)
+
         # Update ghosts
         for ghost in self.ghosts:
             # Some ghost.update signatures may differ; call safely
@@ -299,21 +314,15 @@ class HauntedKitchen:
         """Only draw the parts of the background that are visible"""
         # Draw main kitchen area (simplified - in real game you'd want to clip this)
         if self.is_in_vision(constants.SCREEN_WIDTH//2,  constants.SCREEN_HEIGHT//2, max(constants.SCREEN_WIDTH,  constants.SCREEN_HEIGHT)):
-            pygame.draw.rect(self.screen,  constants.DARK_GRAY, (50, 50,
-                             constants.SCREEN_WIDTH - 100,  constants.SCREEN_HEIGHT - 100))
-            pygame.draw.rect(self.screen,  constants.LIGHT_GRAY, (50, 50,
-                             constants.SCREEN_WIDTH - 100,  constants.SCREEN_HEIGHT - 100), 5)
-
-            # Draw counter tops if they might be visible
-            if self.is_in_vision(constants.SCREEN_WIDTH//2, 150,  constants.SCREEN_WIDTH):
-                pygame.draw.rect(self.screen,  constants.BROWN,
-                                 (100, 150,  constants.SCREEN_WIDTH - 200, 80))
-            if self.is_in_vision(constants.SCREEN_WIDTH//2,  constants.SCREEN_HEIGHT - 230,  constants.SCREEN_WIDTH):
-                pygame.draw.rect(self.screen,  constants.BROWN, (
-                    100,  constants.SCREEN_HEIGHT - 230,  constants.SCREEN_WIDTH - 200, 80))
+            pygame.draw.rect(self.screen,  constants.DARK_GRAY, (0, 0,
+                             constants.SCREEN_WIDTH,  constants.SCREEN_HEIGHT))
 
     def _draw_visible_objects(self):
         """Only draw objects that are within the player's vision"""
+        for obj in self.colliding_objects:
+            if self.is_in_vision(obj.x + obj.width // 2, obj.y + obj.height // 2,
+                                 max(obj.width, obj.height)) or self.debug:
+                obj.draw(self.screen)
         # Draw stations in vision
         for station in self.stations:
             # If your station.draw takes only (screen), call as below:

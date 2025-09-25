@@ -65,7 +65,11 @@ class Player:
         return None
 
     # ---------- existing methods ----------
-    def update(self, keys):
+    def update(self, keys, rects):
+        # Store original position for collision recovery
+        original_x, original_y = self.x, self.y
+        
+        # Movement
         if keys[pygame.K_z] or keys[pygame.K_UP]:
             self.y -= self.speed
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
@@ -75,9 +79,48 @@ class Player:
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.x += self.speed
 
+        # Screen boundary check
         self.x = max(self.radius, min(SCREEN_WIDTH - self.radius, self.x))
         self.y = max(self.radius, min(SCREEN_HEIGHT - self.radius, self.y))
+        
+        # Collision detection with rectangles
+        player_rect = pygame.Rect(self.x - self.radius, self.y - self.radius, 
+                                self.radius * 2, self.radius * 2)
+        
+        for rect in rects:
+            if player_rect.colliderect(rect):
+                self._resolve_collision(rect, original_x, original_y)
+                break  # Only resolve one collision per frame
+        
         self.footprint_timer += 1
+
+    def _resolve_collision(self, obstacle_rect, original_x, original_y):
+        """Resolve collision by moving player to the edge of the obstacle"""
+        player_rect = pygame.Rect(self.x - self.radius, self.y - self.radius, 
+                                self.radius * 2, self.radius * 2)
+        
+        # Calculate overlap on each side
+        left_overlap = player_rect.right - obstacle_rect.left
+        right_overlap = obstacle_rect.right - player_rect.left
+        top_overlap = player_rect.bottom - obstacle_rect.top
+        bottom_overlap = obstacle_rect.bottom - player_rect.top
+        
+        # Find the smallest overlap (the side we hit)
+        min_overlap = min(left_overlap, right_overlap, top_overlap, bottom_overlap)
+        
+        # Move player to the edge based on which side we collided with
+        if min_overlap == left_overlap:
+            # Hit left side of obstacle
+            self.x = obstacle_rect.left - self.radius
+        elif min_overlap == right_overlap:
+            # Hit right side of obstacle
+            self.x = obstacle_rect.right + self.radius
+        elif min_overlap == top_overlap:
+            # Hit top side of obstacle
+            self.y = obstacle_rect.top - self.radius
+        elif min_overlap == bottom_overlap:
+            # Hit bottom side of obstacle
+            self.y = obstacle_rect.bottom + self.radius
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
