@@ -13,6 +13,7 @@ from components.ingredient import Ingredient, IngredientType
 from components.player import Player
 from components.music import play_music
 from components.start_menu import StartMenu
+from components.footprint import Footprint
 
 # --- Pygame init ---
 pygame.init()
@@ -48,6 +49,8 @@ class HauntedKitchen:
         # Create player
         self.player = Player(constants.SCREEN_WIDTH // 2,
                              constants.SCREEN_HEIGHT // 2)
+        self.old_player_x = self.player.x
+        self.old_player_y = self.player.y
 
         # Create footprints list
         self.footprints = []
@@ -160,9 +163,13 @@ class HauntedKitchen:
                 pass
 
         # Create footprints at intervals
+        # Create footprints at intervals
         if self.player.footprint_timer >= self.player.footprint_interval:
-            if hasattr(self.player, "create_footprint"):
-                self.footprints.append(self.player.create_footprint())
+            dx = self.player.x - self.old_player_x
+            dy = self.player.y - self.old_player_y
+            if dx != 0 or dy != 0:
+                angle = math.degrees(math.atan2(-dy, dx))
+                self.footprints.append(Footprint(self.player.x, self.player.y, angle))
             self.player.footprint_timer = 0
 
         # Update footprints (and remove faded ones)
@@ -242,6 +249,9 @@ class HauntedKitchen:
         # Game over if haunt level reaches max
         if self.haunt_level >= self.max_haunt_level:
             self.state = constants.GameState.GAME_OVER
+
+        self.old_player_x = self.player.x
+        self.old_player_y = self.player.y
 
     # -------- drawing helpers --------
     def is_in_vision(self, x, y, radius=0):
