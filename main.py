@@ -1,148 +1,361 @@
-import pygame, math, sys
+import pygame
+import random
+import math
+import sys
+from enum import Enum
 
-# --- setup ---
+from components.cookingStation import CookingStation
+from components.fogOfWar import FogOfWar
+from components.ghost import Ghost, GhostType
+from components.ingredient import Ingredient, IngredientType
+from components.player import Player
+from constants import *
+
+# Initialize pygame
 pygame.init()
-WIDTH, HEIGHT = 800, 600
-HALF_HEIGHT = HEIGHT // 2
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
-font = pygame.font.SysFont("Arial", 24, bold=True)
+pygame.mixer.init()
 
-# --- kleuren ---
-CEILING_COLOR = (240, 240, 240) # wit plafond
-FLOOR_COLOR = (139, 69, 19) # bruin vloer
-WALL_COLOR_1 = (245, 245, 220) # licht beige muur
-WALL_COLOR_2 = (235, 235, 200) # variatie beige muur
-DOOR_COLOR = (150, 100, 50) # deur bruin
-
-# --- map layout ---
-# 1 = muur, 0 = leeg, 2 = deur
-MAP = [
-    [1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,1,1,1,0,1,1,1,2,0,1],
-    [1,0,1,0,0,0,0,0,1,0,0,1],
-    [1,0,1,0,1,1,1,0,1,0,0,1],
-    [1,0,0,0,0,0,0,0,2,0,0,1],
-    [1,0,1,0,1,1,1,0,1,0,0,1],
-    [1,0,1,0,0,0,0,0,1,0,0,1],
-    [1,0,1,1,1,0,1,1,1,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1],
-]
-MAP_WIDTH = len(MAP[0])
-MAP_HEIGHT = len(MAP)
-TILE_SIZE = 64
-
-# --- deuren (status: open/gesloten) ---
-# dict met (i,j) : open_progress (0 = dicht, 1 = open)
-doors = {(9,2):0, (8,5):0}
-labels = {(9,2):"Koelcel", (8,5):"Keuken"}
-
-# --- speler ---
-player_x, player_y = 2*TILE_SIZE, 2*TILE_SIZE
-player_angle = 0
-player_speed = 2.5
-
-# --- raycasting ---
-FOV = math.pi/3
-HALF_FOV = FOV/2
-NUM_RAYS = 160
-MAX_DEPTH = 800
-DELTA_ANGLE = FOV / NUM_RAYS
-DIST = NUM_RAYS / (2 * math.tan(HALF_FOV))
-PROJ_COEFF = DIST * TILE_SIZE
-SCALE = WIDTH // NUM_RAYS
+# Constants
 
 
-def ray_casting(sc, px, py, pa):
-    cur_angle = pa - HALF_FOV
-    for ray in range(NUM_RAYS):
-        sin_a = math.sin(cur_angle)
-        cos_a = math.cos(cur_angle)
+# Game states
+class GameState(Enum):
+    MENU = 0
+    PLAYING = 1
+    GAME_OVER = 2
+    WIN = 3
 
-        for depth in range(MAX_DEPTH):
-            x = px + depth * cos_a
-            y = py + depth * sin_a
+# Fog of War class
 
-            i, j = int(x // TILE_SIZE), int(y // TILE_SIZE)
-            if 0 <= i < MAP_WIDTH and 0 <= j < MAP_HEIGHT:
-                cell = MAP[j][i]
-                if cell == 1 or cell == 2:
-                    # check of deur open is
-                    offset = 0
-                    if cell == 2:
-                        prog = doors.get((i,j),0)
-                        if prog >= 1:  # volledig open, geen muur tekenen
-                            break
-                        offset = prog * TILE_SIZE
+# Footprint class
 
-                    depth *= math.cos(pa - cur_angle)
-                    proj_height = PROJ_COEFF / (depth+0.0001)
+# Ghost types
 
-                    if cell == 1:
-                        if abs(x % TILE_SIZE - TILE_SIZE//2) < abs(y % TILE_SIZE - TILE_SIZE//2):
-                            base_color = WALL_COLOR_1
-                        else:
-                            base_color = WALL_COLOR_2
+# Ghost class
+
+# Ingredient types
+
+# Cooking Station class
+
+# Player class
+
+# Game class
+class HauntedKitchen:
+    def __init__(self):
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption("Haunted Kitchen")
+        self.clock = pygame.time.Clock()
+        self.state = GameState.MENU
+        self.font_large = pygame.font.SysFont(None, 72)
+        self.font_medium = pygame.font.SysFont(None, 48)
+        self.font_small = pygame.font.SysFont(None, 36)
+        
+        # Fog of war system
+        self.fog_of_war = FogOfWar(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.vision_radius = 250
+        
+        self.reset_game()
+        
+    def reset_game(self):
+        # Create player
+        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        
+        # Create footprints list
+        self.footprints = []
+        
+        # Create ghosts
+        self.ghosts = [
+            Ghost(100, 100, GhostType.FOLLOWER),
+            Ghost(SCREEN_WIDTH - 100, 100, GhostType.FOLLOWER),
+            Ghost(100, SCREEN_HEIGHT - 100, GhostType.PATROLLER),
+            Ghost(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100, GhostType.PATROLLER)
+        ]
+        
+        # Create ingredients
+        self.ingredients = []
+        for _ in range(8):
+            ingredient_type = random.choice(list(IngredientType))
+            self.ingredients.append(
+                Ingredient(
+                    random.randint(100, SCREEN_WIDTH - 100),
+                    random.randint(100, SCREEN_HEIGHT - 100),
+                    ingredient_type
+                )
+            )
+        
+        # Create cooking stations
+        self.stations = [
+            CookingStation(200, 200, 150, 100, "chopping"),
+            CookingStation(400, 200, 150, 100, "cooking"),
+            CookingStation(SCREEN_WIDTH - 350, 200, 150, 100, "serving")
+        ]
+        
+        # Game variables
+        self.haunt_level = 0
+        self.max_haunt_level = 100
+        self.dishes_served = 0
+        self.dishes_needed = 3
+        self.ghost_spawn_timer = 0
+        
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+                
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    if self.state == GameState.PLAYING:
+                        self.state = GameState.MENU
                     else:
-                        base_color = DOOR_COLOR
+                        return False
+                        
+                if event.key == pygame.K_RETURN:
+                    if self.state == GameState.MENU:
+                        self.state = GameState.PLAYING
+                        self.reset_game()
+                    elif self.state in [GameState.GAME_OVER, GameState.WIN]:
+                        self.state = GameState.MENU
+                        
+                # Debug key to toggle fog of war (for testing)
+                if event.key == pygame.K_f and self.state == GameState.PLAYING:
+                    self.vision_radius = 2000 if self.vision_radius == 250 else 250
+                        
+        return True
+        
+    def update(self):
+        if self.state != GameState.PLAYING:
+            return
+            
+        keys = pygame.key.get_pressed()
+        
+        # Update player
+        self.player.update(keys)
+        
+        # Update fog of war
+        self.fog_of_war.update(self.player.x, self.player.y, self.stations)
+        
+        # Create footprints at intervals
+        if self.player.footprint_timer >= self.player.footprint_interval:
+            self.footprints.append(self.player.create_footprint())
+            self.player.footprint_timer = 0
+            
+        # Update footprints (and remove faded ones)
+        self.footprints = [f for f in self.footprints if f.update()]
+        
+        # Update ghosts
+        for ghost in self.ghosts:
+            ghost.update(self.player, self.footprints)
+            
+            # Check for collision with player
+            dist = math.sqrt((ghost.x - self.player.x)**2 + (ghost.y - self.player.y)**2)
+            if dist < ghost.radius + self.player.radius:
+                self.state = GameState.GAME_OVER
+                
+        # Check for ingredient collection
+        for ingredient in self.ingredients:
+            if not ingredient.collected:
+                dist = math.sqrt((ingredient.x - self.player.x)**2 + (ingredient.y - self.player.y)**2)
+                if dist < ingredient.radius + self.player.radius:
+                    ingredient.collected = True
+                    self.player.carrying.append(ingredient)
+                    
+        # Check for station interaction
+        for station in self.stations:
+            # Check if player is near station
+            player_in_station = (
+                self.player.x > station.x and self.player.x < station.x + station.width and
+                self.player.y > station.y and self.player.y < station.y + station.height
+            )
+            
+            if player_in_station and keys[pygame.K_SPACE]:
+                station.active = True
+                station.progress += 1
+                
+                # If station is serving and player has ingredients
+                if station.type == "serving" and len(self.player.carrying) > 0:
+                    if station.progress >= 100:
+                        self.dishes_served += 1
+                        self.player.carrying = []  # Clear carried ingredients
+                        station.progress = 0
+                        
+                        # Check for win condition
+                        if self.dishes_served >= self.dishes_needed:
+                            self.state = GameState.WIN
+            else:
+                station.active = False
+                station.progress = 0
+                
+        # Increase haunt level over time
+        self.haunt_level += 0.05
+        
+        # Spawn new ghosts if haunt level is high
+        self.ghost_spawn_timer += 1
+        if self.ghost_spawn_timer > 300 and len(self.ghosts) < 8 and self.haunt_level > 30:
+            side = random.choice(["top", "bottom", "left", "right"])
+            if side == "top":
+                x, y = random.randint(0, SCREEN_WIDTH), -50
+            elif side == "bottom":
+                x, y = random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT + 50
+            elif side == "left":
+                x, y = -50, random.randint(0, SCREEN_HEIGHT)
+            else:  # right
+                x, y = SCREEN_WIDTH + 50, random.randint(0, SCREEN_HEIGHT)
+                
+            ghost_type = GhostType.FOLLOWER if random.random() > 0.3 else GhostType.PATROLLER
+            self.ghosts.append(Ghost(x, y, ghost_type))
+            self.ghost_spawn_timer = 0
+            
+        # Game over if haunt level reaches max
+        if self.haunt_level >= self.max_haunt_level:
+            self.state = GameState.GAME_OVER
+            
+    def draw(self):
+        self.screen.fill(BLACK)
+        
+        if self.state == GameState.MENU:
+            self.draw_menu()
+        elif self.state == GameState.PLAYING:
+            self.draw_game()
+        elif self.state == GameState.GAME_OVER:
+            self.draw_game()
+            self.draw_game_over()
+        elif self.state == GameState.WIN:
+            self.draw_game()
+            self.draw_win()
+            
+        pygame.display.flip()
+        
+    def draw_menu(self):
+        # Title
+        title = self.font_large.render("HAUNTED KITCHEN", True, GREEN)
+        self.screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 200))
+        
+        # Instructions
+        instructions = [
+            "Cook and serve dishes before the kitchen becomes too haunted!",
+            "Move with WASD or Arrow Keys",
+            "Collect ingredients and take them to stations",
+            "Use SPACE at stations to prepare food",
+            "Avoid ghosts that follow your footprints",
+            "You can only see things in your immediate vicinity",
+            "",
+            "Press ENTER to start",
+            "Press ESC to quit",
+            "Press F during game to toggle visibility (debug)"
+        ]
+        
+        for i, line in enumerate(instructions):
+            text = self.font_small.render(line, True, WHITE)
+            self.screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, 350 + i * 40))
+            
+    def draw_game(self):
+        # Draw kitchen background (simplified)
+        pygame.draw.rect(self.screen, DARK_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100))
+        pygame.draw.rect(self.screen, LIGHT_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100), 5)
+        
+        # Draw counter tops
+        pygame.draw.rect(self.screen, BROWN, (100, 150, SCREEN_WIDTH - 200, 80))
+        pygame.draw.rect(self.screen, BROWN, (100, SCREEN_HEIGHT - 230, SCREEN_WIDTH - 200, 80))
+        
+        # Draw stations (always visible once discovered, but dim when not in current vision)
+        for station in self.stations:
+            station.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+            
+        # Draw ingredients
+        for ingredient in self.ingredients:
+            ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+            
+        # Draw footprints
+        for footprint in self.footprints:
+            footprint.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+            
+        # Draw ghosts
+        for ghost in self.ghosts:
+            ghost.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+            
+        # Draw player
+        self.player.draw(self.screen)
+        
+        # Draw fog of war
+        self.fog_of_war.draw(self.screen)
+        
+        # Draw UI (always visible)
+        self.draw_ui()
+        
+    def draw_ui(self):
+        # Haunt level meter
+        meter_width = 300
+        meter_height = 20
+        meter_x = SCREEN_WIDTH - meter_width - 50
+        meter_y = 30
+        
+        # Background
+        pygame.draw.rect(self.screen, DARK_GRAY, (meter_x, meter_y, meter_width, meter_height))
+        
+        # Fill based on haunt level
+        fill_width = int(meter_width * (self.haunt_level / self.max_haunt_level))
+        pygame.draw.rect(self.screen, RED, (meter_x, meter_y, fill_width, meter_height))
+        
+        # Border
+        pygame.draw.rect(self.screen, WHITE, (meter_x, meter_y, meter_width, meter_height), 2)
+        
+        # Label
+        haunt_text = self.font_small.render("Haunt Level", True, WHITE)
+        self.screen.blit(haunt_text, (meter_x, meter_y - 30))
+        
+        # Dishes served
+        dishes_text = self.font_small.render(f"Dishes: {self.dishes_served}/{self.dishes_needed}", True, WHITE)
+        self.screen.blit(dishes_text, (50, 30))
+        
+        # Ghost count
+        ghosts_text = self.font_small.render(f"Ghosts: {len(self.ghosts)}", True, WHITE)
+        self.screen.blit(ghosts_text, (50, 70))
+        
+        # Vision radius indicator (debug)
+        if self.vision_radius == 2000:  # Debug mode
+            debug_text = self.font_small.render("DEBUG: Full Visibility", True, YELLOW)
+            self.screen.blit(debug_text, (SCREEN_WIDTH // 2 - debug_text.get_width() // 2, 100))
+        
+    def draw_game_over(self):
+        # Semi-transparent overlay
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Game over text
+        game_over = self.font_large.render("GAME OVER", True, RED)
+        self.screen.blit(game_over, (SCREEN_WIDTH // 2 - game_over.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
+        
+        # Instructions
+        instructions = self.font_medium.render("Press ENTER to return to menu", True, WHITE)
+        self.screen.blit(instructions, (SCREEN_WIDTH // 2 - instructions.get_width() // 2, SCREEN_HEIGHT // 2 + 50))
+        
+    def draw_win(self):
+        # Semi-transparent overlay
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Win text
+        win_text = self.font_large.render("YOU SURVIVED!", True, GREEN)
+        self.screen.blit(win_text, (SCREEN_WIDTH // 2 - win_text.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
+        
+        # Instructions
+        instructions = self.font_medium.render("Press ENTER to return to menu", True, WHITE)
+        self.screen.blit(instructions, (SCREEN_WIDTH // 2 - instructions.get_width() // 2, SCREEN_HEIGHT // 2 + 50))
+        
+    def run(self):
+        running = True
+        while running:
+            running = self.handle_events()
+            self.update()
+            self.draw()
+            self.clock.tick(FPS)
+            
+        pygame.quit()
+        sys.exit()
 
-                    shade = 255 / (1 + depth * depth * 0.0001)
-                    shade_factor = max(0.2, min(1.0, shade/255))
-                    color = (int(base_color[0]*shade_factor),
-                             int(base_color[1]*shade_factor),
-                             int(base_color[2]*shade_factor))
-
-                    pygame.draw.rect(sc, color,
-                                     (ray*SCALE, HALF_HEIGHT - proj_height//2,
-                                      SCALE, proj_height))
-
-                    # label tonen als deur
-                    if cell == 2 and (i,j) in labels:
-                        text = font.render(labels[(i,j)], True, (255,255,0))
-                        sc.blit(text, (ray*SCALE, HALF_HEIGHT - proj_height//2 - 30))
-
-                    break
-        cur_angle += DELTA_ANGLE
-
-
-# --- main loop ---
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-            # check of er een deur dichtbij is
-            pi, pj = int(player_x//TILE_SIZE), int(player_y//TILE_SIZE)
-            for (i,j) in doors:
-                if abs(i - pi) <= 1 and abs(j - pj) <= 1:
-                    if doors[(i,j)] < 1:
-                        doors[(i,j)] = 1  # deur open
-
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_UP]:
-        nx = player_x + player_speed * math.cos(player_angle)
-        ny = player_y + player_speed * math.sin(player_angle)
-        if MAP[int(ny//TILE_SIZE)][int(nx//TILE_SIZE)] == 0:
-            player_x, player_y = nx, ny
-    if keys[pygame.K_DOWN]:
-        nx = player_x - player_speed * math.cos(player_angle)
-        ny = player_y - player_speed * math.sin(player_angle)
-        if MAP[int(ny//TILE_SIZE)][int(nx//TILE_SIZE)] == 0:
-            player_x, player_y = nx, ny
-    if keys[pygame.K_LEFT]:
-        player_angle -= 0.05
-    if keys[pygame.K_RIGHT]:
-        player_angle += 0.05
-
-    # achtergrond
-    screen.fill(CEILING_COLOR, (0,0,WIDTH,HALF_HEIGHT))
-    screen.fill(FLOOR_COLOR, (0,HALF_HEIGHT,WIDTH,HALF_HEIGHT))
-
-    ray_casting(screen, player_x, player_y, player_angle)
-
-    pygame.display.flip()
-    clock.tick(60)
+# Run the game
+if __name__ == "__main__":
+    game = HauntedKitchen()
+    game.run()
