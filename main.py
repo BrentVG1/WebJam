@@ -9,6 +9,7 @@ from components.fogOfWar import FogOfWar
 from components.ghost import Ghost, GhostType
 from components.ingredient import Ingredient, IngredientType
 from components.player import Player
+from components.music import play_music
 from constants import *
 
 # Initialize pygame
@@ -346,6 +347,7 @@ class HauntedKitchen:
         
     def run(self):
         running = True
+        play_music();
         while running:
             running = self.handle_events()
             self.update()
