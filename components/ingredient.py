@@ -28,7 +28,7 @@ class Ingredient:
             self.image = pygame.image.load("sprites/vegetable/tile002.png").convert_alpha()
 
         # Scale image to match the "radius"
-        self.image = pygame.transform.scale(self.image, (self.radius * 2, self.radius * 2))
+        self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
 
     def draw(self, screen, player_x, player_y, vision_radius):
         if not self.collected:
