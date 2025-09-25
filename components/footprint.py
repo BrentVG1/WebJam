@@ -4,7 +4,7 @@ import pygame
 class Footprint:
     foot_toggle = True  # Wisselt tussen links en rechts
 
-    def __init__(self, x, y, player_dx=1, player_dy=0, scale=0.5, brightness=1.0):
+    def __init__(self, x, y, player_x=None, player_y=None, scale=0.5, brightness=1.0):
         self.x = x
         self.y = y
         self.scale = scale
@@ -13,17 +13,22 @@ class Footprint:
         self.visible = True
         self.radius = 20  # voorkomt crash in main
 
-        # Links of rechts voet
+        # Links of rechts voet (kan je eventueel behouden voor variatie)
         self.is_left = Footprint.foot_toggle
         Footprint.foot_toggle = not Footprint.foot_toggle
 
-        # Bereken rotatie op basis van beweging speler
-        angle = math.degrees(math.atan2(-player_dy, player_dx))
-        offset = -15 if self.is_left else 15
-        self.rotation = angle + offset
-
         # Kleur van de voetafdruk (bruin)
         self.color = (139, 69, 19)
+
+        # Rotatie berekenen
+        if player_x is not None and player_y is not None:
+            # Richt hiel naar speler
+            dx = player_x - x
+            dy = player_y - y
+            self.rotation = math.degrees(math.atan2(-dy, dx))
+        else:
+            # Valt terug op standaard rotatie (0 graden)
+            self.rotation = 0
 
     def update(self):
         self.brightness -= self.fade_speed
@@ -56,7 +61,7 @@ class Footprint:
         # Hiel
         pygame.draw.ellipse(surf, color, (w*0.2, h*0.55, w*0.6, h*0.35))
 
-        # Rotatie gebaseerd op beweging speler
+        # Rotatie zodat hiel naar speler wijst
         surf = pygame.transform.rotate(surf, self.rotation)
 
         # Teken op scherm
