@@ -30,12 +30,16 @@ class Ingredient:
         # Scale image to match the "radius"
         self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
 
-    def draw(self, screen, player_x, player_y, vision_radius):
+    def draw(self, screen, player_x, player_y, vision_radius, debug=False):
         if not self.collected:
-            # Check if ingredient is within player's vision
-            dist_to_player = math.sqrt((self.x - player_x) ** 2 + (self.y - player_y) ** 2)
-            self.visible = dist_to_player <= vision_radius
+            if debug:
+                self.visible = True
+            else:
+                # Check if ingredient is within player's vision
+                dist_to_player = math.sqrt((self.x - player_x) ** 2 + (self.y - player_y) ** 2)
+                self.visible = dist_to_player <= vision_radius
 
             if self.visible:
                 rect = self.image.get_rect(center=(int(self.x), int(self.y)))
                 screen.blit(self.image, rect)
+

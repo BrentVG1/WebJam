@@ -335,13 +335,9 @@ class HauntedKitchen:
                     station.draw(self.screen)
 
         for ingredient in self.ingredients:
-            if (not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius)) or self.debug:
-                try:
-                    ingredient.draw(self.screen, self.player.x,
-                                    self.player.y, self.vision_radius)
-                except TypeError:
-                    # If your Ingredient.draw only takes (screen)
-                    ingredient.draw(self.screen)
+            if not ingredient.collected:
+                ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius, self.debug)
+
 
         for footprint in self.footprints:
             if self.is_in_vision(footprint.x, footprint.y, footprint.radius) or self.debug:
