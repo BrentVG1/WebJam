@@ -259,30 +259,6 @@ class HauntedKitchen:
 
         pygame.display.flip()
 
-    def draw_menu(self):
-        title = self.font_large.render(
-            "HAUNTED KITCHEN", True, constants.GREEN)
-        self.screen.blit(title, (constants.SCREEN_WIDTH //
-                         2 - title.get_width() // 2, 200))
-
-        instructions = [
-            "Cook and serve dishes before the kitchen becomes too haunted!",
-            "Move with WASD or Arrow Keys",
-            "Collect ingredients and take them to stations",
-            "Use SPACE at stations to prepare food",
-            "Avoid ghosts that follow your footprints",
-            "You can only see things in your immediate vicinity",
-            "",
-            "Press ENTER to start",
-            "Press ESC to quit",
-            "Press F during game to toggle visibility (debug)",
-        ]
-
-        for i, line in enumerate(instructions):
-            text = self.font_small.render(line, True, constants.WHITE)
-            self.screen.blit(text, (constants.SCREEN_WIDTH //
-                             2 - text.get_width() // 2, 350 + i * 40))
-
     def draw_game(self):
         # Clear screen with black (this will be our fog)
         self.screen.fill(constants.BLACK)
