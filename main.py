@@ -18,6 +18,9 @@ from components.start_menu import StartMenu
 pygame.init()
 pygame.mixer.init()
 
+# --- Userevents ---
+MUSIC_END = pygame.USEREVENT + 1
+pygame.mixer.music.set_endevent(MUSIC_END)
 
 class HauntedKitchen:
     def __init__(self):
@@ -101,6 +104,10 @@ class HauntedKitchen:
                 elif action == "quit":
                     return False
                 continue  # don't process menu events below
+
+            # --- Loads and plays a new track
+            if event.type == MUSIC_END:
+                play_music()
 
             # --- Playing / GameOver / Win states ---
             if event.type == pygame.QUIT:
