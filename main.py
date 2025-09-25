@@ -11,7 +11,7 @@ from components.ghost import Ghost, GhostType
 from components.ingredient import Ingredient, IngredientType
 from components.player import Player
 from components.music import play_music
-
+from components.start_menu import StartMenu
 
 # --- Pygame init ---
 pygame.init()
@@ -26,6 +26,7 @@ class HauntedKitchen:
         self.clock = pygame.time.Clock()
         self.state = constants.GameState.MENU
         self.debug = False
+        self.menu = StartMenu()
 
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
@@ -79,11 +80,23 @@ class HauntedKitchen:
 
     def handle_events(self):
         for event in pygame.event.get():
+            # Menu state delegates to StartMenu
+            if self.state == constants.GameState.MENU:
+                action = self.menu.handle_event(event)
+                if action == "start":
+                    self.state = constants.GameState.PLAYING
+                    self.reset_game()
+                elif action == "quit":
+                    return False
+                continue  # don't process menu events below
+
+            # --- Playing / GameOver / Win states ---
             if event.type == pygame.QUIT:
                 return False
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    # ESC from playing -> back to menu; from other states -> quit
                     if self.state == constants.GameState.PLAYING:
                         self.state = constants.GameState.MENU
                     else:
@@ -93,16 +106,12 @@ class HauntedKitchen:
                     self.debug = not self.debug
 
                 elif event.key == pygame.K_RETURN:
-                    if self.state == constants.GameState.MENU:
-                        self.state = constants.GameState.PLAYING
-                        self.reset_game()
-                    elif self.state in [constants.GameState.GAME_OVER, constants.GameState.WIN]:
+                    if self.state in [constants.GameState.GAME_OVER, constants.GameState.WIN]:
                         self.state = constants.GameState.MENU
 
                 # Toggle fog radius (debug)
                 if event.key == pygame.K_f and self.state == constants.GameState.PLAYING:
                     self.vision_radius = 2000 if self.vision_radius == 250 else 250
-                    # keep FogOfWar in sync with the new radius
                     if hasattr(self.fog_of_war, "radius"):
                         self.fog_of_war.radius = self.vision_radius
 
@@ -217,41 +226,21 @@ class HauntedKitchen:
         return distance <= self.vision_radius + radius
 
     def draw(self):
-        self.screen.fill(constants.BLACK)
-
         if self.state == constants.GameState.MENU:
-            self.draw_menu()
-        elif self.state == constants.GameState.PLAYING:
-            self.draw_game()
-        elif self.state == constants.GameState.GAME_OVER:
-            self.draw_game()
-            self.draw_game_over()
-        elif self.state == constants.GameState.WIN:
-            self.draw_game()
-            self.draw_win()
+            self.menu.draw(self.screen)
+        else:
+            self.screen.fill(constants.BLACK)
+
+            if self.state == constants.GameState.PLAYING:
+                self.draw_game()
+            elif self.state == constants.GameState.GAME_OVER:
+                self.draw_game()
+                self.draw_game_over()
+            elif self.state == constants.GameState.WIN:
+                self.draw_game()
+                self.draw_win()
 
         pygame.display.flip()
-
-    def draw_menu(self):
-        title = self.font_large.render("HAUNTED KITCHEN", True, constants.GREEN)
-        self.screen.blit(title, (constants.SCREEN_WIDTH // 2 - title.get_width() // 2, 200))
-
-        instructions = [
-            "Cook and serve dishes before the kitchen becomes too haunted!",
-            "Move with WASD or Arrow Keys",
-            "Collect ingredients and take them to stations",
-            "Use SPACE at stations to prepare food",
-            "Avoid ghosts that follow your footprints",
-            "You can only see things in your immediate vicinity",
-            "",
-            "Press ENTER to start",
-            "Press ESC to quit",
-            "Press F during game to toggle visibility (debug)",
-        ]
-
-        for i, line in enumerate(instructions):
-            text = self.font_small.render(line, True, constants.WHITE)
-            self.screen.blit(text, (constants.SCREEN_WIDTH // 2 - text.get_width() // 2, 350 + i * 40))
 
     def draw_game(self):
         # 1) Background (only if roughly in vision)
