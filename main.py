@@ -85,15 +85,16 @@ class HauntedKitchen:
 
         # Create cooking stations
         self.stations = [
-            CookingStation(200, 200, 150, 100, "chopping"),
+            CookingStation(constants.SCREEN_WIDTH - 350, 300, 50, 150, "chopping"),
             CookingStation(400, 200, 150, 100, "cooking"),
             CookingStation(600, 200, 150, 100, "baking"),
             CookingStation(constants.SCREEN_WIDTH - 350,
                            200, 150, 100, "serving"),
         ]
+        
 
         self.colliding_objects = [
-            CollisionObject(300, 250, constants.SCREEN_WIDTH - 600, 300),
+            CollisionObject(300, 250, constants.SCREEN_WIDTH - 600, 250), # central table
             CollisionObject(0, constants.SCREEN_HEIGHT -
                             self.safe_zone.height - 5, 100, 10),
             CollisionObject(200, constants.SCREEN_HEIGHT -
@@ -335,9 +336,13 @@ class HauntedKitchen:
                     station.draw(self.screen)
 
         for ingredient in self.ingredients:
-            if not ingredient.collected:
-                ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius, self.debug)
-
+            if (not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius)) or self.debug:
+                try:
+                    ingredient.draw(self.screen, self.player.x,
+                                    self.player.y, self.vision_radius)
+                except TypeError:
+                    # If your Ingredient.draw only takes (screen)
+                    ingredient.draw(self.screen)
 
         for footprint in self.footprints:
             if self.is_in_vision(footprint.x, footprint.y, footprint.radius) or self.debug:
