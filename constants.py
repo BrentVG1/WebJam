@@ -1,4 +1,4 @@
-SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
+SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
 FPS = 60
 
 # Colors
@@ -24,6 +24,12 @@ class IngredientType(Enum):
     CHEESE = 4
     WATER = 5
     SALT = 6
+    
+class GameState(Enum):
+    MENU = 0
+    PLAYING = 1
+    GAME_OVER = 2
+    WIN = 3
 
 # Recipes for dishes
 RECIPES = {

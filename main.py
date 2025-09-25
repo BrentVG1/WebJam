@@ -4,8 +4,6 @@ import math
 import sys
 import constants  # <-- explicit import
 
-<<<<<<< HEAD
-=======
 from components.cookingStation import CookingStation
 from components.fogOfWar import FogOfWar
 from components.ghost import Ghost, GhostType
@@ -22,11 +20,7 @@ pygame.mixer.init()
 
 
 # Game states
-class GameState(Enum):
-    MENU = 0
-    PLAYING = 1
-    GAME_OVER = 2
-    WIN = 3
+
 
 # Fog of War class
 
@@ -43,7 +37,6 @@ class GameState(Enum):
 # Player class
 
 # Game class
->>>>>>> 4d294088e577594db8e865d47c65e45804ecde5c
 class HauntedKitchen:
     def __init__(self):
         self.vision_radius = 250
@@ -62,69 +55,75 @@ class HauntedKitchen:
         self.reset_game()
 
     def reset_game(self):
-        self.player = {
-            "x": constants.SCREEN_WIDTH // 2,
-            "y": constants.SCREEN_HEIGHT // 2,
-            "speed": 5,
-            "radius": 20,
-            "carrying": [],
-        }
-
-        self.ghosts = []
-        for _ in range(4):
-            self.ghosts.append({
-                "x": random.randint(100, constants.SCREEN_WIDTH - 100),
-                "y": random.randint(100, constants.SCREEN_HEIGHT - 100),
-                "radius": 20,
-                "speed": 2,
-            })
-
+        # Create player
+        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        
+        # Create footprints list
+        self.footprints = []
+        
+        # Create ghosts
+        self.ghosts = [
+            Ghost(100, 100, GhostType.FOLLOWER),
+            Ghost(SCREEN_WIDTH - 100, 100, GhostType.FOLLOWER),
+            Ghost(100, SCREEN_HEIGHT - 100, GhostType.PATROLLER),
+            Ghost(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100, GhostType.PATROLLER)
+        ]
+        
+        # Create ingredients
         self.ingredients = []
         for _ in range(8):
-            ing_type = random.choice(list(constants.IngredientType))
-            self.ingredients.append({
-                "x": random.randint(100, constants.SCREEN_WIDTH - 100),
-                "y": random.randint(100, constants.SCREEN_HEIGHT - 100),
-                "radius": 15,
-                "type": ing_type,
-                "collected": False,
-            })
-
+            ingredient_type = random.choice(list(IngredientType))
+            self.ingredients.append(
+                Ingredient(
+                    random.randint(100, SCREEN_WIDTH - 100),
+                    random.randint(100, SCREEN_HEIGHT - 100),
+                    ingredient_type
+                )
+            )
+        
+        # Create cooking stations
         self.stations = [
-            {"x": 200, "y": 200, "w": 150, "h": 100, "type": "chopping", "progress": 0},
-            {"x": 400, "y": 200, "w": 150, "h": 100, "type": "cooking", "progress": 0},
-            {"x": constants.SCREEN_WIDTH - 350, "y": 200, "w": 150, "h": 100, "type": "serving", "progress": 0},
+            CookingStation(200, 200, 150, 100, "chopping"),
+            CookingStation(400, 200, 150, 100, "cooking"),
+            CookingStation(SCREEN_WIDTH - 350, 200, 150, 100, "serving")
         ]
-
+        
+        # Game variables
         self.haunt_level = 0
         self.max_haunt_level = 100
         self.dishes_served = 0
         self.dishes_needed = 3
-        self.ghost_projectiles = []
-        self.wrong_combo_active = False
-
+        self.ghost_spawn_timer = 0
+        
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
+                
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    if self.state == constants.GameState.PLAYING:
-                        self.state = constants.GameState.MENU
+                    if self.state == GameState.PLAYING:
+                        self.state = GameState.MENU
                     else:
                         return False
+                        
                 if event.key == pygame.K_RETURN:
-                    if self.state == constants.GameState.MENU:
-                        self.state = constants.GameState.PLAYING
+                    if self.state == GameState.MENU:
+                        self.state = GameState.PLAYING
                         self.reset_game()
-                    elif self.state in [constants.GameState.GAME_OVER, constants.GameState.WIN]:
-                        self.state = constants.GameState.MENU
+                    elif self.state in [GameState.GAME_OVER, GameState.WIN]:
+                        self.state = GameState.MENU
+                        
+                # Debug key to toggle fog of war (for testing)
+                if event.key == pygame.K_f and self.state == GameState.PLAYING:
+                    self.vision_radius = 2000 if self.vision_radius == 250 else 250
+                        
         return True
-
+        
     def update(self):
-        if self.state != constants.GameState.PLAYING:
+        if self.state != GameState.PLAYING:
             return
-
+            
         keys = pygame.key.get_pressed()
         
         # Update player
@@ -143,78 +142,70 @@ class HauntedKitchen:
         
         # Update ghosts
         for ghost in self.ghosts:
-            dx = self.player["x"] - ghost["x"]
-            dy = self.player["y"] - ghost["y"]
-            dist = math.hypot(dx, dy)
-            if dist > 0:
-                ghost["x"] += ghost["speed"] * dx / dist
-                ghost["y"] += ghost["speed"] * dy / dist
-
-            if dist < ghost["radius"] + self.player["radius"]:
-                self.state = constants.GameState.GAME_OVER
-
-        # Projectiles update
-        for proj in self.ghost_projectiles:
-            proj["x"] += proj["vx"]
-            proj["y"] += proj["vy"]
-            if math.hypot(
-                proj["x"] - self.player["x"],
-                proj["y"] - self.player["y"]
-            ) < proj["radius"] + self.player["radius"]:
-                self.state = constants.GameState.GAME_OVER
-
-        self.ghost_projectiles = [
-            p for p in self.ghost_projectiles
-            if 0 < p["x"] < constants.SCREEN_WIDTH and 0 < p["y"] < constants.SCREEN_HEIGHT
-        ]
-
-        # Ingredient collection
-        for ing in self.ingredients:
-            if not ing["collected"]:
-                if math.hypot(
-                    ing["x"] - self.player["x"],
-                    ing["y"] - self.player["y"]
-                ) < ing["radius"] + self.player["radius"]:
-                    ing["collected"] = True
-                    self.player["carrying"].append(ing["type"])
-
-        # Station interaction
+            ghost.update(self.player, self.footprints)
+            
+            # Check for collision with player
+            dist = math.sqrt((ghost.x - self.player.x)**2 + (ghost.y - self.player.y)**2)
+            if dist < ghost.radius + self.player.radius:
+                self.state = GameState.GAME_OVER
+                
+        # Check for ingredient collection
+        for ingredient in self.ingredients:
+            if not ingredient.collected:
+                dist = math.sqrt((ingredient.x - self.player.x)**2 + (ingredient.y - self.player.y)**2)
+                if dist < ingredient.radius + self.player.radius:
+                    ingredient.collected = True
+                    self.player.carrying.append(ingredient)
+                    
+        # Check for station interaction
         for station in self.stations:
-            inside = (
-                station["x"] < self.player["x"] < station["x"] + station["w"]
-                and station["y"] < self.player["y"] < station["y"] + station["h"]
+            # Check if player is near station
+            player_in_station = (
+                self.player.x > station.x and self.player.x < station.x + station.width and
+                self.player.y > station.y and self.player.y < station.y + station.height
             )
-            if inside and keys[pygame.K_SPACE]:
-                station["progress"] += 1
-                if station["type"] == "serving" and station["progress"] >= 100:
-                    recipe_name = self.check_recipe(self.player["carrying"])
-                    if recipe_name:
+            
+            if player_in_station and keys[pygame.K_SPACE]:
+                station.active = True
+                station.progress += 1
+                
+                # If station is serving and player has ingredients
+                if station.type == "serving" and len(self.player.carrying) > 0:
+                    if station.progress >= 100:
                         self.dishes_served += 1
-                        self.player["carrying"] = []
-                        self.wrong_combo_active = False
-                        station["progress"] = 0
+                        self.player.carrying = []  # Clear carried ingredients
+                        station.progress = 0
+                        
+                        # Check for win condition
                         if self.dishes_served >= self.dishes_needed:
-                            self.state = constants.GameState.WIN
-                    else:
-                        self.wrong_combo_active = True
-                        station["progress"] = 0
-
-        # Spawn ghost projectiles if wrong combo active
-        if self.wrong_combo_active and random.random() < 0.02:
-            ghost = random.choice(self.ghosts)
-            dx = self.player["x"] - ghost["x"]
-            dy = self.player["y"] - ghost["y"]
-            dist = math.hypot(dx, dy)
-            if dist > 0:
-                vx = 5 * dx / dist
-                vy = 5 * dy / dist
-                self.ghost_projectiles.append(
-                    {"x": ghost["x"], "y": ghost["y"], "vx": vx, "vy": vy, "radius": 5}
-                )
-
+                            self.state = GameState.WIN
+            else:
+                station.active = False
+                station.progress = 0
+                
+        # Increase haunt level over time
         self.haunt_level += 0.05
+        
+        # Spawn new ghosts if haunt level is high
+        self.ghost_spawn_timer += 1
+        if self.ghost_spawn_timer > 300 and len(self.ghosts) < 8 and self.haunt_level > 30:
+            side = random.choice(["top", "bottom", "left", "right"])
+            if side == "top":
+                x, y = random.randint(0, SCREEN_WIDTH), -50
+            elif side == "bottom":
+                x, y = random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT + 50
+            elif side == "left":
+                x, y = -50, random.randint(0, SCREEN_HEIGHT)
+            else:  # right
+                x, y = SCREEN_WIDTH + 50, random.randint(0, SCREEN_HEIGHT)
+                
+            ghost_type = GhostType.FOLLOWER if random.random() > 0.3 else GhostType.PATROLLER
+            self.ghosts.append(Ghost(x, y, ghost_type))
+            self.ghost_spawn_timer = 0
+            
+        # Game over if haunt level reaches max
         if self.haunt_level >= self.max_haunt_level:
-            self.state = constants.GameState.GAME_OVER
+            self.state = GameState.GAME_OVER
 
     def check_recipe(self, ingredients):
         for recipe_name, combo in constants.RECIPES.items():
