@@ -4,6 +4,46 @@ import math
 import sys
 import constants  # <-- explicit import
 
+<<<<<<< HEAD
+=======
+from components.cookingStation import CookingStation
+from components.fogOfWar import FogOfWar
+from components.ghost import Ghost, GhostType
+from components.ingredient import Ingredient, IngredientType
+from components.player import Player
+from components.music import play_music
+from constants import *
+
+# Initialize pygame
+pygame.init()
+pygame.mixer.init()
+
+# Constants
+
+
+# Game states
+class GameState(Enum):
+    MENU = 0
+    PLAYING = 1
+    GAME_OVER = 2
+    WIN = 3
+
+# Fog of War class
+
+# Footprint class
+
+# Ghost types
+
+# Ghost class
+
+# Ingredient types
+
+# Cooking Station class
+
+# Player class
+
+# Game class
+>>>>>>> 4d294088e577594db8e865d47c65e45804ecde5c
 class HauntedKitchen:
     def __init__(self):
         self.screen = pygame.display.set_mode(
@@ -238,6 +278,7 @@ class HauntedKitchen:
 
     def run(self):
         running = True
+        play_music();
         while running:
             running = self.handle_events()
             self.update()
