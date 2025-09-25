@@ -16,27 +16,6 @@ from constants import *
 pygame.init()
 pygame.mixer.init()
 
-# Constants
-
-
-# Game states
-
-
-# Fog of War class
-
-# Footprint class
-
-# Ghost types
-
-# Ghost class
-
-# Ingredient types
-
-# Cooking Station class
-
-# Player class
-
-# Game class
 class HauntedKitchen:
     def __init__(self):
         self.vision_radius = 250
@@ -44,6 +23,7 @@ class HauntedKitchen:
         pygame.display.set_caption("Haunted Kitchen")
         self.clock = pygame.time.Clock()
         self.state = constants.GameState.MENU
+        self.debug = False
 
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
@@ -106,6 +86,8 @@ class HauntedKitchen:
                         self.state = GameState.MENU
                     else:
                         return False
+                elif event.key == pygame.K_F12:
+                    self.debug = not self.debug
                         
                 if event.key == pygame.K_RETURN:
                     if self.state == GameState.MENU:
@@ -271,7 +253,8 @@ class HauntedKitchen:
         self._draw_visible_objects()
         
         # 3. Apply fog of war (for gradient edges)
-        self.fog_of_war.draw(self.screen, self.player.x, self.player.y)
+        if not self.debug:
+            self.fog_of_war.draw(self.screen, self.player.x, self.player.y)
         
         # 4. Draw UI (always visible)
         self.draw_ui()
@@ -294,22 +277,22 @@ class HauntedKitchen:
         # Draw stations in vision
         for station in self.stations:
             if self.is_in_vision(station.x + station.width//2, station.y + station.height//2, 
-                               max(station.width, station.height)):
+                               max(station.width, station.height)) or self.debug:
                 station.draw(self.screen)
         
         # Draw ingredients in vision
         for ingredient in self.ingredients:
-            if not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius):
+            if (not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius)) or self.debug:
                 ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
         
         # Draw footprints in vision
         for footprint in self.footprints:
-            if self.is_in_vision(footprint.x, footprint.y, footprint.radius):
+            if self.is_in_vision(footprint.x, footprint.y, footprint.radius) or self.debug:
                 footprint.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
         
         # Draw ghosts in vision
         for ghost in self.ghosts:
-            if self.is_in_vision(ghost.x, ghost.y, ghost.radius):
+            if self.is_in_vision(ghost.x, ghost.y, ghost.radius) or self.debug:
                 ghost.draw(self.screen)
         
         # Always draw player
