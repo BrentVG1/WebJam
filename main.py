@@ -1,8 +1,9 @@
-import pygame
-import random
-import math
 import sys
-import constants  # <-- explicit import
+import math
+import random
+import pygame
+
+import constants  # use namespaced constants everywhere
 
 from components.cookingStation import CookingStation
 from components.fogOfWar import FogOfWar
@@ -10,16 +11,17 @@ from components.ghost import Ghost, GhostType
 from components.ingredient import Ingredient, IngredientType
 from components.player import Player
 from components.music import play_music
-from constants import *
 
-# Initialize pygame
+
+# --- Pygame init ---
 pygame.init()
 pygame.mixer.init()
+
 
 class HauntedKitchen:
     def __init__(self):
         self.vision_radius = 250
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
         pygame.display.set_caption("Haunted Kitchen")
         self.clock = pygame.time.Clock()
         self.state = constants.GameState.MENU
@@ -28,175 +30,195 @@ class HauntedKitchen:
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
         self.font_small = pygame.font.SysFont(None, 36)
-        
-        # Fog of war system
-        self.fog_of_war = FogOfWar(SCREEN_WIDTH, SCREEN_HEIGHT, self.vision_radius)
-        
+
+        # Fog of war system (stores its own radius)
+        self.fog_of_war = FogOfWar(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, self.vision_radius)
+
         self.reset_game()
 
     def reset_game(self):
         # Create player
-        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        
+        self.player = Player(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2)
+
         # Create footprints list
         self.footprints = []
-        
+
         # Create ghosts
         self.ghosts = [
             Ghost(100, 100, GhostType.FOLLOWER),
-            Ghost(SCREEN_WIDTH - 100, 100, GhostType.FOLLOWER),
-            Ghost(100, SCREEN_HEIGHT - 100, GhostType.PATROLLER),
-            Ghost(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100, GhostType.PATROLLER)
+            Ghost(constants.SCREEN_WIDTH - 100, 100, GhostType.FOLLOWER),
+            Ghost(100, constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER),
+            Ghost(constants.SCREEN_WIDTH - 100, constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER),
         ]
-        
+
         # Create ingredients
         self.ingredients = []
         for _ in range(8):
             ingredient_type = random.choice(list(IngredientType))
             self.ingredients.append(
                 Ingredient(
-                    random.randint(100, SCREEN_WIDTH - 100),
-                    random.randint(100, SCREEN_HEIGHT - 100),
-                    ingredient_type
+                    random.randint(100, constants.SCREEN_WIDTH - 100),
+                    random.randint(100, constants.SCREEN_HEIGHT - 100),
+                    ingredient_type,
                 )
             )
-        
+
         # Create cooking stations
         self.stations = [
             CookingStation(200, 200, 150, 100, "chopping"),
             CookingStation(400, 200, 150, 100, "cooking"),
-            CookingStation(SCREEN_WIDTH - 350, 200, 150, 100, "serving")
+            CookingStation(constants.SCREEN_WIDTH - 350, 200, 150, 100, "serving"),
         ]
-        
+
         # Game variables
         self.haunt_level = 0
         self.max_haunt_level = 100
         self.dishes_served = 0
         self.dishes_needed = 3
         self.ghost_spawn_timer = 0
-        
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
-                
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    if self.state == GameState.PLAYING:
-                        self.state = GameState.MENU
+                    if self.state == constants.GameState.PLAYING:
+                        self.state = constants.GameState.MENU
                     else:
                         return False
+
                 elif event.key == pygame.K_F12:
                     self.debug = not self.debug
-                        
-                if event.key == pygame.K_RETURN:
-                    if self.state == GameState.MENU:
-                        self.state = GameState.PLAYING
+
+                elif event.key == pygame.K_RETURN:
+                    if self.state == constants.GameState.MENU:
+                        self.state = constants.GameState.PLAYING
                         self.reset_game()
-                    elif self.state in [GameState.GAME_OVER, GameState.WIN]:
-                        self.state = GameState.MENU
-                        
-                # Debug key to toggle fog of war (for testing)
-                if event.key == pygame.K_f and self.state == GameState.PLAYING:
+                    elif self.state in [constants.GameState.GAME_OVER, constants.GameState.WIN]:
+                        self.state = constants.GameState.MENU
+
+                # Toggle fog radius (debug)
+                if event.key == pygame.K_f and self.state == constants.GameState.PLAYING:
                     self.vision_radius = 2000 if self.vision_radius == 250 else 250
-                        
+                    # keep FogOfWar in sync with the new radius
+                    if hasattr(self.fog_of_war, "radius"):
+                        self.fog_of_war.radius = self.vision_radius
+
         return True
-        
+
     def update(self):
-        if self.state != GameState.PLAYING:
+        if self.state != constants.GameState.PLAYING:
             return
-            
+
         keys = pygame.key.get_pressed()
-        
+
         # Update player
         self.player.update(keys)
-        
-        # Update fog of war
-        # self.fog_of_war.update(self.player.x, self.player.y, self.stations)
-        
+
+        # Player handles ingredient pickup internally (single carry slot)
+        if hasattr(self.player, "try_auto_pickup_nearby"):
+            self.player.try_auto_pickup_nearby(self.ingredients)
+
+        # (Optional) Update fog of war if it needs an update step
+        # If your FogOfWar has an update method that takes player pos, call it:
+        if hasattr(self.fog_of_war, "update"):
+            try:
+                self.fog_of_war.update(self.player.x, self.player.y, self.stations)
+            except TypeError:
+                # Some versions may only accept (x, y) or different args; ignore if not needed
+                pass
+
         # Create footprints at intervals
         if self.player.footprint_timer >= self.player.footprint_interval:
-            self.footprints.append(self.player.create_footprint())
+            if hasattr(self.player, "create_footprint"):
+                self.footprints.append(self.player.create_footprint())
             self.player.footprint_timer = 0
-            
+
         # Update footprints (and remove faded ones)
         self.footprints = [f for f in self.footprints if f.update()]
-        
+
         # Update ghosts
         for ghost in self.ghosts:
-            ghost.update(self.player, self.footprints)
-            
-            # Check for collision with player
-            dist = math.sqrt((ghost.x - self.player.x)**2 + (ghost.y - self.player.y)**2)
+            # Some ghost.update signatures may differ; call safely
+            try:
+                ghost.update(self.player, self.footprints)
+            except TypeError:
+                ghost.update(self.player)
+
+            # Check collision with player
+            dist = math.hypot(ghost.x - self.player.x, ghost.y - self.player.y)
             if dist < ghost.radius + self.player.radius:
-                self.state = GameState.GAME_OVER
-                
-        # Check for ingredient collection
-        for ingredient in self.ingredients:
-            if not ingredient.collected:
-                dist = math.sqrt((ingredient.x - self.player.x)**2 + (ingredient.y - self.player.y)**2)
-                if dist < ingredient.radius + self.player.radius:
-                    ingredient.collected = True
-                    self.player.carrying.append(ingredient)
-                    
-        # Check for station interaction
-        for station in self.stations:
-            # Check if player is near station
-            player_in_station = (
-                self.player.x > station.x and self.player.x < station.x + station.width and
-                self.player.y > station.y and self.player.y < station.y + station.height
-            )
-            
-            if player_in_station and keys[pygame.K_SPACE]:
-                station.active = True
-                station.progress += 1
-                
-                # If station is serving and player has ingredients
-                if station.type == "serving" and len(self.player.carrying) > 0:
-                    if station.progress >= 100:
-                        self.dishes_served += 1
-                        self.player.carrying = []  # Clear carried ingredients
+                self.state = constants.GameState.GAME_OVER
+
+        # Station interaction
+        if keys[pygame.K_SPACE]:
+            for station in self.stations:
+                # Is player in station bounds?
+                in_station = (
+                    station.x < self.player.x < station.x + station.width
+                    and station.y < self.player.y < station.y + station.height
+                )
+                if in_station:
+                    # activate/progress
+                    if hasattr(station, "active"):
+                        station.active = True
+                    if hasattr(station, "progress"):
+                        station.progress += 1
+
+                    # Serving station consumes carried item when complete
+                    if station.type == "serving" and getattr(self.player, "has_item", lambda: False)():
+                        if getattr(station, "progress", 0) >= 100:
+                            self.dishes_served += 1
+                            # consume carried item
+                            if hasattr(self.player, "consume"):
+                                self.player.consume()
+                            else:
+                                self.player.carrying = None
+                            station.progress = 0
+
+                            if self.dishes_served >= self.dishes_needed:
+                                self.state = constants.GameState.WIN
+                else:
+                    if hasattr(station, "active"):
+                        station.active = False
+                    if hasattr(station, "progress"):
                         station.progress = 0
-                        
-                        # Check for win condition
-                        if self.dishes_served >= self.dishes_needed:
-                            self.state = GameState.WIN
-            else:
-                station.active = False
-                station.progress = 0
-                
+
         # Increase haunt level over time
         self.haunt_level += 0.05
-        
+
         # Spawn new ghosts if haunt level is high
         self.ghost_spawn_timer += 1
         if self.ghost_spawn_timer > 300 and len(self.ghosts) < 8 and self.haunt_level > 30:
             side = random.choice(["top", "bottom", "left", "right"])
             if side == "top":
-                x, y = random.randint(0, SCREEN_WIDTH), -50
+                x, y = random.randint(0, constants.SCREEN_WIDTH), -50
             elif side == "bottom":
-                x, y = random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT + 50
+                x, y = random.randint(0, constants.SCREEN_WIDTH), constants.SCREEN_HEIGHT + 50
             elif side == "left":
-                x, y = -50, random.randint(0, SCREEN_HEIGHT)
+                x, y = -50, random.randint(0, constants.SCREEN_HEIGHT)
             else:  # right
-                x, y = SCREEN_WIDTH + 50, random.randint(0, SCREEN_HEIGHT)
-                
+                x, y = constants.SCREEN_WIDTH + 50, random.randint(0, constants.SCREEN_HEIGHT)
+
             ghost_type = GhostType.FOLLOWER if random.random() > 0.3 else GhostType.PATROLLER
             self.ghosts.append(Ghost(x, y, ghost_type))
             self.ghost_spawn_timer = 0
-            
+
         # Game over if haunt level reaches max
         if self.haunt_level >= self.max_haunt_level:
-            self.state = GameState.GAME_OVER
+            self.state = constants.GameState.GAME_OVER
 
-    def check_recipe(self, ingredients):
-        for recipe_name, combo in constants.RECIPES.items():
-            if sorted(combo) == sorted(ingredients):
-                return recipe_name
-        return None
+    # -------- drawing helpers --------
+    def is_in_vision(self, x, y, radius=0):
+        """Check if an object is within the player's vision"""
+        distance = math.hypot(x - self.player.x, y - self.player.y)
+        return distance <= self.vision_radius + radius
 
     def draw(self):
         self.screen.fill(constants.BLACK)
+
         if self.state == constants.GameState.MENU:
             self.draw_menu()
         elif self.state == constants.GameState.PLAYING:
@@ -207,19 +229,13 @@ class HauntedKitchen:
         elif self.state == constants.GameState.WIN:
             self.draw_game()
             self.draw_win()
+
         pygame.display.flip()
 
     def draw_menu(self):
         title = self.font_large.render("HAUNTED KITCHEN", True, constants.GREEN)
         self.screen.blit(title, (constants.SCREEN_WIDTH // 2 - title.get_width() // 2, 200))
-        text = self.font_small.render("Press ENTER to start", True, constants.WHITE)
-        self.screen.blit(text, (constants.SCREEN_WIDTH // 2 - text.get_width() // 2, 400))
 
-        # Title
-        title = self.font_large.render("HAUNTED KITCHEN", True, GREEN)
-        self.screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 200))
-        
-        # Instructions
         instructions = [
             "Cook and serve dishes before the kitchen becomes too haunted!",
             "Move with WASD or Arrow Keys",
@@ -230,98 +246,104 @@ class HauntedKitchen:
             "",
             "Press ENTER to start",
             "Press ESC to quit",
-            "Press F during game to toggle visibility (debug)"
+            "Press F during game to toggle visibility (debug)",
         ]
-        
+
         for i, line in enumerate(instructions):
-            text = self.font_small.render(line, True, WHITE)
-            self.screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, 350 + i * 40))
-            
-    def is_in_vision(self, x, y, radius=0):
-        """Check if an object is within the player's vision"""
-        distance = math.sqrt((x - self.player.x)**2 + (y - self.player.y)**2)
-        return distance <= self.vision_radius + radius
-    
+            text = self.font_small.render(line, True, constants.WHITE)
+            self.screen.blit(text, (constants.SCREEN_WIDTH // 2 - text.get_width() // 2, 350 + i * 40))
+
     def draw_game(self):
-        # Clear screen with black (this will be our fog)
-        self.screen.fill(BLACK)
-        
-        # 1. Draw visible portions of the kitchen background
-        self._draw_visible_background()
-        
-        # 2. Only draw objects that are in vision
-        self._draw_visible_objects()
-        
-        # 3. Apply fog of war (for gradient edges)
-        if not self.debug:
-            self.fog_of_war.draw(self.screen, self.player.x, self.player.y)
-        
-        # 4. Draw UI (always visible)
-        self.draw_ui()
-    
-    def _draw_visible_background(self):
-        """Only draw the parts of the background that are visible"""
-        # Draw main kitchen area (simplified - in real game you'd want to clip this)
-        if self.is_in_vision(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, max(SCREEN_WIDTH, SCREEN_HEIGHT)):
-            pygame.draw.rect(self.screen, DARK_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100))
-            pygame.draw.rect(self.screen, LIGHT_GRAY, (50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100), 5)
-            
-            # Draw counter tops if they might be visible
-            if self.is_in_vision(SCREEN_WIDTH//2, 150, SCREEN_WIDTH):
-                pygame.draw.rect(self.screen, BROWN, (100, 150, SCREEN_WIDTH - 200, 80))
-            if self.is_in_vision(SCREEN_WIDTH//2, SCREEN_HEIGHT - 230, SCREEN_WIDTH):
-                pygame.draw.rect(self.screen, BROWN, (100, SCREEN_HEIGHT - 230, SCREEN_WIDTH - 200, 80))
-    
-    def _draw_visible_objects(self):
-        """Only draw objects that are within the player's vision"""
-        # Draw stations in vision
+        # 1) Background (only if roughly in vision)
+        if self.is_in_vision(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2,
+                             max(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)):
+            pygame.draw.rect(self.screen, constants.DARK_GRAY,
+                             (50, 50, constants.SCREEN_WIDTH - 100, constants.SCREEN_HEIGHT - 100))
+            pygame.draw.rect(self.screen, constants.LIGHT_GRAY,
+                             (50, 50, constants.SCREEN_WIDTH - 100, constants.SCREEN_HEIGHT - 100), 5)
+
+            # Counter tops
+            if self.is_in_vision(constants.SCREEN_WIDTH // 2, 150, constants.SCREEN_WIDTH):
+                pygame.draw.rect(self.screen, constants.BROWN,
+                                 (100, 150, constants.SCREEN_WIDTH - 200, 80))
+            if self.is_in_vision(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT - 230, constants.SCREEN_WIDTH):
+                pygame.draw.rect(self.screen, constants.BROWN,
+                                 (100, constants.SCREEN_HEIGHT - 230, constants.SCREEN_WIDTH - 200, 80))
+
+        # 2) Objects in vision
         for station in self.stations:
-            if self.is_in_vision(station.x + station.width//2, station.y + station.height//2, 
-                               max(station.width, station.height)) or self.debug:
-                station.draw(self.screen)
-        
-        # Draw ingredients in vision
+            # If your station.draw takes only (screen), call as below:
+            if self.is_in_vision(station.x + station.width // 2, station.y + station.height // 2,
+                                 max(station.width, station.height)) or self.debug:
+                try:
+                    station.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+                except TypeError:
+                    station.draw(self.screen)
+
         for ingredient in self.ingredients:
             if (not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius)) or self.debug:
-                ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
-        
-        # Draw footprints in vision
+                try:
+                    ingredient.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+                except TypeError:
+                    # If your Ingredient.draw only takes (screen)
+                    ingredient.draw(self.screen)
+
         for footprint in self.footprints:
             if self.is_in_vision(footprint.x, footprint.y, footprint.radius) or self.debug:
-                footprint.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
-        
-        # Draw ghosts in vision
+                try:
+                    footprint.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+                except TypeError:
+                    footprint.draw(self.screen)
+
         for ghost in self.ghosts:
             if self.is_in_vision(ghost.x, ghost.y, ghost.radius) or self.debug:
-                ghost.draw(self.screen)
-        
-        # Always draw player
+                try:
+                    ghost.draw(self.screen, self.player.x, self.player.y, self.vision_radius)
+                except TypeError:
+                    ghost.draw(self.screen)
+
+        # Player is always visible (draw last so it appears on top)
         self.player.draw(self.screen)
-        
+
+        # 3) Fog of war overlay (if your FogOfWar.draw needs position, pass it)
+        if not self.debug:
+            try:
+                self.fog_of_war.draw(self.screen, self.player.x, self.player.y)
+            except TypeError:
+                self.fog_of_war.draw(self.screen)
+
+        # 4) UI
+        self.draw_ui()
+
     def draw_ui(self):
-        # Haunt level meter
         meter_width = 300
         meter_height = 20
-        meter_x = SCREEN_WIDTH - meter_width - 50
+        meter_x = constants.SCREEN_WIDTH - meter_width - 50
         meter_y = 30
-        
+
         # Background
-        pygame.draw.rect(self.screen, DARK_GRAY, (meter_x, meter_y, meter_width, meter_height))
-        
+        pygame.draw.rect(self.screen, constants.DARK_GRAY, (meter_x, meter_y, meter_width, meter_height))
+
         # Fill based on haunt level
         fill_width = int(meter_width * (self.haunt_level / self.max_haunt_level))
-        pygame.draw.rect(self.screen, RED, (meter_x, meter_y, fill_width, meter_height))
-        
+        pygame.draw.rect(self.screen, constants.RED, (meter_x, meter_y, fill_width, meter_height))
+
         # Border
-        pygame.draw.rect(self.screen, WHITE, (meter_x, meter_y, meter_width, meter_height), 2)
-        
-        # Label
-        haunt_text = self.font_small.render("Haunt Level", True, WHITE)
+        pygame.draw.rect(self.screen, constants.WHITE, (meter_x, meter_y, meter_width, meter_height), 2)
+
+        # Labels
+        haunt_text = self.font_small.render("Haunt Level", True, constants.WHITE)
         self.screen.blit(haunt_text, (meter_x, meter_y - 30))
-        
-        # Dishes served
-        dishes_text = self.font_small.render(f"Dishes: {self.dishes_served}/{self.dishes_needed}", True, WHITE)
+
+        dishes_text = self.font_small.render(f"Dishes: {self.dishes_served}/{self.dishes_needed}", True, constants.WHITE)
         self.screen.blit(dishes_text, (50, 30))
+
+        ghosts_text = self.font_small.render(f"Ghosts: {len(self.ghosts)}", True, constants.WHITE)
+        self.screen.blit(ghosts_text, (50, 70))
+
+        if self.vision_radius == 2000:
+            debug_text = self.font_small.render("DEBUG: Full Visibility", True, constants.YELLOW)
+            self.screen.blit(debug_text, (constants.SCREEN_WIDTH // 2 - debug_text.get_width() // 2, 100))
 
     def draw_game_over(self):
         overlay = pygame.Surface((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -338,15 +360,24 @@ class HauntedKitchen:
         self.screen.blit(text, (constants.SCREEN_WIDTH // 2 - text.get_width() // 2, constants.SCREEN_HEIGHT // 2))
 
     def run(self):
+        try:
+            play_music()
+        except Exception as e:
+            print(f"Music error: {e}")
+
         running = True
-        play_music();
         while running:
             running = self.handle_events()
+            if not running:
+                break
+
             self.update()
             self.draw()
             self.clock.tick(constants.FPS)
+
         pygame.quit()
         sys.exit()
+
 
 if __name__ == "__main__":
     HauntedKitchen().run()
