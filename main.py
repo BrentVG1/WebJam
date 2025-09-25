@@ -29,6 +29,7 @@ class HauntedKitchen:
         self.state = constants.GameState.MENU
         self.debug = False
         self.menu = StartMenu()
+        self.player_in_zone = False
 
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
@@ -47,14 +48,18 @@ class HauntedKitchen:
 
         # Create footprints list
         self.footprints = []
+        
+        self.safe_zone = SafeZone(
+            0, constants.SCREEN_HEIGHT - 250, constants.SCREEN_WIDTH, 250)
+
 
         # Create ghosts
         self.ghosts = [
-            Ghost(100, 100, GhostType.FOLLOWER),
-            Ghost(constants.SCREEN_WIDTH - 100, 100, GhostType.FOLLOWER),
-            Ghost(100, constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER),
+            Ghost(100, 100, GhostType.FOLLOWER, self.safe_zone.height),
+            Ghost(constants.SCREEN_WIDTH - 100, 100, GhostType.FOLLOWER, self.safe_zone.height),
+            Ghost(100, constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER, self.safe_zone.height),
             Ghost(constants.SCREEN_WIDTH - 100,
-                  constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER),
+                  constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER, self.safe_zone.height),
         ]
 
         # Create ingredients
@@ -77,9 +82,7 @@ class HauntedKitchen:
                            200, 150, 100, "serving"),
         ]
 
-        self.safe_zone = SafeZone(
-            0, constants.SCREEN_HEIGHT - 250, constants.SCREEN_WIDTH, 250)
-
+       
         # Game variables
         self.haunt_level = 0
         self.max_haunt_level = 100
@@ -157,14 +160,16 @@ class HauntedKitchen:
 
         # Update footprints (and remove faded ones)
         self.footprints = [f for f in self.footprints if f.update()]
-
+        
+        self.player_in_zone =  self.safe_zone.in_zone(self.player.x, self.player.y)
+        
         # Update ghosts
         for ghost in self.ghosts:
             # Some ghost.update signatures may differ; call safely
             try:
-                ghost.update(self.player, self.footprints)
+                ghost.update(self.player, self.footprints, self.player_in_zone)
             except TypeError:
-                ghost.update(self.player)
+                ghost.update(self.player, None, self.player_in_zone)
 
             # Check collision with player
             dist = math.hypot(ghost.x - self.player.x, ghost.y - self.player.y)
@@ -254,8 +259,6 @@ class HauntedKitchen:
 
         pygame.display.flip()
 
-<<<<<<< HEAD
-=======
     def draw_menu(self):
         title = self.font_large.render(
             "HAUNTED KITCHEN", True, constants.GREEN)
@@ -280,7 +283,6 @@ class HauntedKitchen:
             self.screen.blit(text, (constants.SCREEN_WIDTH //
                              2 - text.get_width() // 2, 350 + i * 40))
 
->>>>>>> 454b816f29f113d466afad5c12570ec408b194dc
     def draw_game(self):
         # Clear screen with black (this will be our fog)
         self.screen.fill(constants.BLACK)
