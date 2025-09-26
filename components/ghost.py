@@ -111,7 +111,7 @@ class Ghost:
         if self.current_type == GhostType.FOLLOWER:
             body_color = (255, 80, 80, 220)  # roodachtig voor achtervolgers
         else:
-            body_color = (240, 240, 240, 200)  # wit / lichtgrijs voor patrollers
+            body_color = (60, 120, 240, 200)  # wit / lichtgrijs voor patrollers
 
         # --- Hoofd: nette ellipse ---
         head_width = self.radius * 2

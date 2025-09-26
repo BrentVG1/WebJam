@@ -18,11 +18,11 @@ class HamburgerStation(CollisionObject):
         self.progress = 0
         
         self.hamburgerItems = {
-            "bun": {"present": False, "ingredient": Ingredient(self.x + (self.width / 5), self.y + self.height / 2, IngredientType.BUN)},
-            "patty": {"present": False, "ingredient": Ingredient(self.x + (self.width / 5) * 2, self.y + self.height / 2, IngredientType.PATTY)},
-            "lettuce": {"present": False, "ingredient": Ingredient(self.x + (self.width / 5) * 3, self.y + self.height / 2, IngredientType.LETTUCE)},
-            "tomato": {"present": False, "ingredient": Ingredient(self.x + (self.width / 5) * 4, self.y + self.height / 2, IngredientType.TOMATO)},
-            "cheese": {"present": False, "ingredient": Ingredient(self.x + (self.width / 5) * 5, self.y + self.height / 2, IngredientType.CHEESE)},
+            "bun": {"present": False, "ingredient": Ingredient(self.x + (self.width / 6) * 1, self.y + self.height / 2, IngredientType.BUN)},
+            "patty": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 2, self.y + self.height / 2, IngredientType.PATTY)},
+            "lettuce": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 3, self.y + self.height / 2, IngredientType.LETTUCE)},
+            "tomato": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 4, self.y + self.height / 2, IngredientType.TOMATO)},
+            "cheese": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 5, self.y + self.height / 2, IngredientType.CHEESE)},
         }
         self.hamburgerItems["patty"]["ingredient"].processed = True
         self.hamburgerItems["lettuce"]["ingredient"].processed = True

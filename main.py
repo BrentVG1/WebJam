@@ -32,7 +32,7 @@ class HauntedKitchen:
     def __init__(self):
         self.vision_radius = 300
         self.clock = pygame.time.Clock()
-        self.dt =  0
+        self.dt = 0
         self.screen = pygame.display.set_mode(
             (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
         pygame.display.set_caption("Haunted Kitchen")
@@ -47,9 +47,10 @@ class HauntedKitchen:
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
         self.font_small = pygame.font.SysFont(None, 36)
-        self.background_img = pygame.image.load("sprites/vloer-tegel-modified.png").convert()
+        self.background_img = pygame.image.load(
+            "sprites/vloer-tegel-modified.png").convert()
         self.background_img = pygame.transform.scale(
-        self.background_img, (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
+            self.background_img, (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
         # --- Safezone wood texture ---
         self.wood_tile = pygame.image.load("sprites/wood_tile.png").convert()
 
@@ -84,17 +85,16 @@ class HauntedKitchen:
                   constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER, self.safe_zone.height),
         ]
 
-
         # Create cooking stations
         self.stations = [
             CookingStation(constants.SCREEN_WIDTH - 400,
                            300, 100, 100, "cooking"),
             CookingStation(400, 250, 100, 100, "chopping"),
-  
+
             CookingStation(400,
                            constants.SCREEN_HEIGHT - self.safe_zone.height, 120, 100, "serving"),
         ]
-        
+
         self.hamburger_station = HamburgerStation(
             600, constants.SCREEN_HEIGHT - self.safe_zone.height - 100, 300, 100)
 
@@ -107,7 +107,7 @@ class HauntedKitchen:
                 250, 50, IngredientType.CHEESE)),
             ItemStation(constants.SCREEN_WIDTH - 100, 0, 100, 100,
                         Ingredient(constants.SCREEN_WIDTH - 50, 50, IngredientType.PATTY, "cooking")),
-            ItemStation(500, 450, 100, 50, Ingredient(
+            ItemStation(500, 400, 100, 100, Ingredient(
                 550, 475, IngredientType.BUN)),
         ]
 
@@ -244,68 +244,84 @@ class HauntedKitchen:
         closest_proximity_station = []
         if keys[pygame.K_SPACE]:
             for item_station in self.item_stations:
-                distance = item_station.distance_to_rect((self.player.x, self.player.y))
+                distance = item_station.distance_to_rect(
+                    (self.player.x, self.player.y))
                 if distance < self.interaction_proximity:
-                    closest_proximity_station.append([item_station, distance, "item"])
-                    
+                    closest_proximity_station.append(
+                        [item_station, distance, "item"])
+
             for station in self.stations:
-                distance = station.distance_to_rect((self.player.x, self.player.y))
+                distance = station.distance_to_rect(
+                    (self.player.x, self.player.y))
                 if distance < self.interaction_proximity:
-                    closest_proximity_station.append([station, distance, "station"])
-            
-            distance = self.hamburger_station.distance_to_rect((self.player.x, self.player.y))
+                    closest_proximity_station.append(
+                        [station, distance, "station"])
+
+            distance = self.hamburger_station.distance_to_rect(
+                (self.player.x, self.player.y))
             if distance < self.interaction_proximity:
-                closest_proximity_station.append([self.hamburger_station, distance, "assembly"])
-            
+                closest_proximity_station.append(
+                    [self.hamburger_station, distance, "assembly"])
+
             if not len(closest_proximity_station) == 0:
-                closest_station = min(closest_proximity_station, key=lambda x: x[1])
+                closest_station = min(
+                    closest_proximity_station, key=lambda x: x[1])
+                try:
+                    print(closest_station[0].type, closest_station[1])
+                except:
+                    pass
                 if closest_station[2] == "item":
                     if not (self.player.has_item() and self.player.carrying.type == IngredientType.HAMBURGER):
-                        self.player.carrying = closest_station[0].ingredient  
+                        self.player.carrying = closest_station[0].ingredient
                 elif closest_station[2] == "assembly":
-                    if self.player.has_item():
-                        ingredient = self.player.carrying
-                        if ingredient.type == IngredientType.BUN:
-                            self.player.carrying = None
-                            self.hamburger_station.hamburgerItems["bun"]["present"] = True
-                        elif ingredient.type == IngredientType.PATTY and ingredient.processed:
-                            self.player.carrying = None
-                            self.hamburger_station.hamburgerItems["patty"]["present"] = True
-                        elif ingredient.type == IngredientType.LETTUCE and ingredient.processed:
-                            self.player.carrying = None
-                            self.hamburger_station.hamburgerItems["lettuce"]["present"] = True
-                        elif ingredient.type == IngredientType.CHEESE:
-                            self.player.carrying = None
-                            self.hamburger_station.hamburgerItems["cheese"]["present"] = True
-                        elif ingredient.type == IngredientType.TOMATO and ingredient.processed:
-                            self.player.carrying = None
-                            self.hamburger_station.hamburgerItems["tomato"]["present"] = True 
-                    elif self.hamburger_station.deliverable():
-                        self.hamburger_station.clear()
-                        self.player.carrying = self.hamburger_station.hamburger          
+                    if not self.player_in_zone:
+                        if self.player.has_item():
+                            ingredient = self.player.carrying
+                            if ingredient.type == IngredientType.BUN:
+                                self.player.carrying = None
+                                self.hamburger_station.hamburgerItems["bun"]["present"] = True
+                            elif ingredient.type == IngredientType.PATTY and ingredient.processed:
+                                self.player.carrying = None
+                                self.hamburger_station.hamburgerItems["patty"]["present"] = True
+                            elif ingredient.type == IngredientType.LETTUCE and ingredient.processed:
+                                self.player.carrying = None
+                                self.hamburger_station.hamburgerItems["lettuce"]["present"] = True
+                            elif ingredient.type == IngredientType.CHEESE:
+                                self.player.carrying = None
+                                self.hamburger_station.hamburgerItems["cheese"]["present"] = True
+                            elif ingredient.type == IngredientType.TOMATO and ingredient.processed:
+                                self.player.carrying = None
+                                self.hamburger_station.hamburgerItems["tomato"]["present"] = True
+                        elif self.hamburger_station.deliverable():
+                            self.hamburger_station.clear()
+                            self.player.carrying = self.hamburger_station.hamburger
                 elif self.player.carrying is not None and self.player.carrying.processed_by == closest_station[0].type and not self.player.carrying.processed:
                     # activate/progress
-                    
+
                     if hasattr(closest_station[0], "active"):
                         closest_station[0].active = True
                     if hasattr(closest_station[0], "progress"):
-                        closest_station[0].progress += 1
+                        closest_station[0].progress += 1 * self.dt
 
                     # Serving closest_station[0] consumes carried item when complete
                     if closest_station[0].progress >= 100:
-                        if closest_station[0].type == "serving" and self.player.has_item():
-                            self.dishes_served += 1
-                            # consume carried item
-                            if hasattr(self.player, "consume"):
-                                self.player.consume()
-                            else:
-                                self.player.carrying = None
-                            closest_station[0].progress = 0
 
-                            if self.dishes_served >= self.dishes_needed:
-                                self.state = constants.GameState.WIN
-                        else: 
-                            self.player.carrying.processed = True
+                        self.player.carrying.processed = True
+                elif closest_station[0].type == "serving" and self.player.has_item() and self.player.carrying.type == IngredientType.HAMBURGER:
+                    if hasattr(closest_station[0], "active"):
+                        closest_station[0].active = True
+                    if hasattr(closest_station[0], "progress"):
+                        closest_station[0].progress += 1 * self.dt
+                    if closest_station[0].progress >= 100:
+                        self.dishes_served += 1 
+                        self.haunt_level = 0
+                        # consume carried item
+                        if hasattr(self.player, "consume"):
+                            self.player.consume()
+                        else:
+                            self.player.carrying = None
+                        closest_station[0].progress = 0
+
                 else:
                     if hasattr(closest_station[0], "active"):
                         closest_station[0].active = False
@@ -394,7 +410,6 @@ class HauntedKitchen:
     def _draw_visible_background(self):
         self.screen.blit(self.background_img, (0, 0))
 
-
     def _draw_visible_objects(self):
         """Only draw objects that are within the player's vision"""
         for obj in self.colliding_objects:
@@ -420,11 +435,11 @@ class HauntedKitchen:
                                       self.player.y, self.vision_radius)
                 except TypeError:
                     item_station.draw(self.screen)
-                    
+
         if self.is_in_vision(self.player.x, self.player.y, self.player.radius) or self.debug:
             try:
                 self.hamburger_station.draw(self.screen, self.player.x,
-                                 self.player.y, self.vision_radius)
+                                            self.player.y, self.vision_radius)
             except TypeError:
                 self.hamburger_station.draw(self.screen)
 
@@ -446,7 +461,8 @@ class HauntedKitchen:
         sz = self.safe_zone
 
         # --- Draw wood texture background ---
-        wood_scaled = pygame.transform.scale(self.wood_tile, (sz.width, sz.height))
+        wood_scaled = pygame.transform.scale(
+            self.wood_tile, (sz.width, sz.height))
         surface = wood_scaled.copy()
 
         t = pygame.time.get_ticks() * 0.002  # rustig tempo
@@ -475,8 +491,9 @@ class HauntedKitchen:
             alpha = int(pulse / (i + 1))
             glow_color = (*col, alpha)
             pygame.draw.rect(overlay, glow_color,
-                            (-i * 5, -i * 5, sz.width + i * 10, sz.height + i * 10),
-                            border_radius=25 + i * 5)
+                             (-i * 5, -i * 5, sz.width +
+                              i * 10, sz.height + i * 10),
+                             border_radius=25 + i * 5)
 
         # Waves
         wave_count = 8
@@ -485,11 +502,13 @@ class HauntedKitchen:
         for i in range(wave_count + 1):
             x = i * (sz.width / wave_count)
             top_y = wave_height * math.sin(t + i * 0.5)
-            bottom_y = sz.height - wave_height * math.sin(t + i * 0.5 + math.pi / 2)
+            bottom_y = sz.height - wave_height * \
+                math.sin(t + i * 0.5 + math.pi / 2)
             top_points.append((x, top_y))
             bottom_points.append((x, bottom_y))
         top_points = [(0, 0)] + top_points + [(sz.width, 0)]
-        bottom_points = [(0, sz.height)] + bottom_points + [(sz.width, sz.height)]
+        bottom_points = [(0, sz.height)] + bottom_points + \
+            [(sz.width, sz.height)]
         pygame.draw.polygon(overlay, (*base_colors[0], 120), top_points)
         pygame.draw.polygon(overlay, (*base_colors[1], 120), bottom_points)
 
@@ -499,7 +518,8 @@ class HauntedKitchen:
             py = random.randint(0, sz.height)
             radius = random.randint(1, 3)
             alpha = random.randint(30, 100)
-            pygame.draw.circle(overlay, (255, 255, 255, alpha), (px, py), radius)
+            pygame.draw.circle(
+                overlay, (255, 255, 255, alpha), (px, py), radius)
 
         # Blit overlay on top of wood
         surface.blit(overlay, (0, 0))
@@ -512,9 +532,6 @@ class HauntedKitchen:
 
         # Finally blit to screen
         self.screen.blit(surface, (sz.x, sz.y))
-
-
-
 
     def draw_ui(self):
         # Maak een aparte surface voor de UI
