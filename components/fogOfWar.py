@@ -34,7 +34,7 @@ class FogOfWar:
                         (player_x - self.vision_radius, player_y - self.vision_radius),
                         special_flags=pygame.BLEND_RGBA_MIN)
         
-        pygame.draw.circle(fog_surface, (0, 0, 0), (int(player_x), int(player_y)), self.vision_radius + 110, width=111)
+        pygame.draw.circle(fog_surface, (0, 0, 0), (int(player_x), int(player_y)), self.vision_radius * 1.5, width=self.vision_radius // 2 + 1)
         
         # Draw the fog on top of everything
         screen.blit(fog_surface, (0, 0))

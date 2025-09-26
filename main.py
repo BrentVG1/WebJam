@@ -29,7 +29,7 @@ pygame.mixer.music.set_endevent(MUSIC_END)
 
 class HauntedKitchen:
     def __init__(self):
-        self.vision_radius = 250
+        self.vision_radius = 350
         self.screen = pygame.display.set_mode(
             (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
         pygame.display.set_caption("Haunted Kitchen")
@@ -60,7 +60,7 @@ class HauntedKitchen:
         self.footprints = []
 
         self.safe_zone = SafeZone(
-            0, constants.SCREEN_HEIGHT - 150, constants.SCREEN_WIDTH, 150)
+            0, constants.SCREEN_HEIGHT - 250, constants.SCREEN_WIDTH, 250)
 
         # Create ghosts
         self.ghosts = [
@@ -79,10 +79,10 @@ class HauntedKitchen:
         # Create cooking stations
         self.stations = [
             CookingStation(constants.SCREEN_WIDTH - 400, 300, 100, 100, "chopping"),
-            CookingStation(400, 250, 150, 50, "cooking"),
+            CookingStation(400, 250, 100, 100, "cooking"),
             CookingStation(constants.SCREEN_WIDTH - 50, constants.SCREEN_HEIGHT - self.safe_zone.height - 150, 50, 150, "baking"),
             CookingStation(400,
-                           constants.SCREEN_HEIGHT - self.safe_zone.height - 50, 200, 50, "serving"),
+                           constants.SCREEN_HEIGHT - self.safe_zone.height, 120, 100, "serving"),
         ]
 
         self.item_stations = [
@@ -311,10 +311,10 @@ class HauntedKitchen:
         # Alles tekenen
         self.screen.fill(constants.BLACK)
         self._draw_visible_background()
+        self._draw_safe_zone()
         self._draw_visible_objects()
         if not self.debug:
             self.fog_of_war.draw(self.screen, self.player.x, self.player.y)
-        self._draw_safe_zone()
         self.player.draw(self.screen)
 
         # UI altijd **laatste**

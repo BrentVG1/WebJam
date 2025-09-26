@@ -19,10 +19,14 @@ class CookingStation(CollisionObject):
         if self.type == "chopping":
             self.texture = pygame.image.load("sprites/Snijplank.png").convert_alpha()
             self.texture = pygame.transform.scale(self.texture, (self.width, self.height))
-        # elif self.type == "cooking":
-        #     self.texture = pygame.image.load("sprites/cooking_station.png").convert_alpha()
-        # elif self.type == "serving":
-        #     self.texture = pygame.image.load("sprites/serving_station.png").convert_alpha()
+        elif self.type == "cooking":
+            self.texture = pygame.image.load("sprites/grillpraat.png").convert_alpha()
+            self.texture = pygame.transform.scale(self.texture, (self.width, self.height))
+            
+        elif self.type == "serving":
+            self.texture = pygame.image.load("sprites/Toog.png").convert_alpha()
+            self.texture = pygame.transform.scale(self.texture, (self.width, self.height))
+            
         # elif self.type == "baking":
         #     self.texture = pygame.image.load("sprites/baking_station.png").convert_alpha()
         super().__init__(x, y, width, height)

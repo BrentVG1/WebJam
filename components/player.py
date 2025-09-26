@@ -24,9 +24,14 @@ class Player:
         # --- Load sprites ---
         self.sprites = {}
         self.sprites["down"] = pygame.image.load(os.path.join("sprites", "rat_chef.png")).convert_alpha()
+        self.sprites["down"] = pygame.transform.scale(self.sprites["down"], (self.radius * 2.5, self.radius * 2.5))
         self.sprites["up"] = pygame.image.load(os.path.join("sprites", "rat_chef_back-1.png")).convert_alpha()
         self.sprites["left"] = pygame.image.load(os.path.join("sprites", "rat_chef_left.png")).convert_alpha()
         self.sprites["right"] = pygame.image.load(os.path.join("sprites", "rat_chef_right.png")).convert_alpha()
+        self.sprites["up"] = pygame.transform.scale(self.sprites["up"], (self.radius * 2.5, self.radius * 2.5))
+        self.sprites["left"] = pygame.transform.scale(self.sprites["left"], (self.radius * 2.5, self.radius * 2.5))
+        self.sprites["right"] = pygame.transform.scale(self.sprites["right"], (self.radius * 2.5, self.radius * 2.5))
+        
         # You can later add "left" and "right" if needed
 
     # ---------- carry helpers ----------
