@@ -330,6 +330,7 @@ class HauntedKitchen:
                 # play death soundeffect
                 if self.playscream:
                     play_soundeffect("scream")
+                    print("played scream")
                 self.playscream = False
             elif self.state == constants.GameState.WIN:
                 self.draw_game()
