@@ -84,7 +84,7 @@ class HauntedKitchen:
             CookingStation(400,
                            constants.SCREEN_HEIGHT - self.safe_zone.height - 50, 200, 50, "serving"),
         ]
-        
+
         self.item_stations = [
             ItemStation(0, 0, 100, 100, Ingredient(50 ,50, IngredientType.LETTUCE)),
             ItemStation(100, 0, 100, 100, Ingredient(150 ,50, IngredientType.TOMATO)),
@@ -194,10 +194,10 @@ class HauntedKitchen:
 
                 self.player.footprint_timer = 0
                 self.last_known_location = self.player.x, self.player.y
-        
+
             # Update footprints (and remove faded ones)
         self.footprints = [f for f in self.footprints if f.update()]
-        
+
 
         self.player_in_zone = self.safe_zone.in_zone(
             self.player.x, self.player.y)
@@ -343,7 +343,7 @@ class HauntedKitchen:
                                  self.player.y, self.vision_radius)
                 except TypeError:
                     station.draw(self.screen)
-                    
+
         for item_station in self.item_stations:
             if self.is_in_vision(item_station.x + item_station.width // 2, item_station.y + item_station.height // 2,
                                  max(item_station.width, item_station.height)) or self.debug:
@@ -377,7 +377,68 @@ class HauntedKitchen:
         # Always draw player
 
     def _draw_safe_zone(self):
-        self.safe_zone.draw(self.screen)
+        sz = self.safe_zone
+        surface = pygame.Surface((sz.width, sz.height), pygame.SRCALPHA)
+        t = pygame.time.get_ticks() * 0.002  # rustig tempo
+
+        # --- Check voor gevaar ---
+        danger = any(
+            ghost.current_type == GhostType.FOLLOWER and
+            math.hypot(ghost.x - self.player.x, ghost.y - self.player.y) < 150
+            for ghost in self.ghosts
+        )
+
+        # --- Basis kleuren ---
+        if danger:
+            base_colors = [(255, 80, 80), (255, 120, 120)]  # rood tinten
+            text_color = (255, 200, 200)
+        else:
+            base_colors = [(80, 180, 255), (120, 220, 255)]  # blauw-cyaan tinten
+            text_color = (255, 255, 255)
+
+        # Pulsing alpha voor zachte glow
+        pulse = 60 + 40 * math.sin(t)
+
+        # Glow laagjes
+        for i, col in enumerate(base_colors):
+            alpha = int(pulse / (i + 1))
+            glow_color = (*col, alpha)
+            pygame.draw.rect(surface, glow_color,
+                             (-i * 5, -i * 5, sz.width + i * 10, sz.height + i * 10),
+                             border_radius=25 + i * 5)
+
+        # --- Rustige golvende boven- en onderkant ---
+        wave_count = 8  # minder golven = rustiger
+        wave_height = 10  # kleinere amplitude
+        top_points = []
+        bottom_points = []
+        for i in range(wave_count + 1):
+            x = i * (sz.width / wave_count)
+            top_y = wave_height * math.sin(t + i * 0.5)  # langzamere golf
+            bottom_y = sz.height - wave_height * math.sin(t + i * 0.5 + math.pi / 2)
+            top_points.append((x, top_y))
+            bottom_points.append((x, bottom_y))
+        top_points = [(0, 0)] + top_points + [(sz.width, 0)]
+        bottom_points = [(0, sz.height)] + bottom_points + [(sz.width, sz.height)]
+        pygame.draw.polygon(surface, (*base_colors[0], 120), top_points)
+        pygame.draw.polygon(surface, (*base_colors[1], 120), bottom_points)
+
+        # Subtiele fonkelende deeltjes
+        for _ in range(15):
+            px = random.randint(0, sz.width)
+            py = random.randint(0, sz.height)
+            radius = random.randint(1, 3)
+            alpha = random.randint(30, 100)
+            pygame.draw.circle(surface, (255, 255, 255, alpha), (px, py), radius)
+
+        # Tekst "SAFE ZONE" midden in de zone
+        font = pygame.font.SysFont(None, 48)
+        text = font.render("SAFE ZONE", True, text_color)
+        text_rect = text.get_rect(center=(sz.width // 2, sz.height // 2))
+        surface.blit(text, text_rect)
+
+        # Blit naar scherm
+        self.screen.blit(surface, (sz.x, sz.y))
 
     def draw_ui(self):
         # Maak een aparte surface voor de UI
