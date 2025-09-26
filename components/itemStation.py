@@ -1,38 +1,43 @@
-import math
 import pygame
 from components.collisionObject import CollisionObject
-from constants import *
-
+from components.ingredient import IngredientType
 
 class ItemStation(CollisionObject):
+    INGREDIENT_IMAGES = {
+        IngredientType.LETTUCE: "sprites/Slatafel.png",
+        IngredientType.TOMATO: "sprites/tomatentafel.png",
+        IngredientType.CHEESE: "sprites/kaastafel.png",
+        IngredientType.PATTY: "sprites/Pattytafel.png",
+        IngredientType.BUN: "sprites/Bunstafel.png",
+    }
+
     def __init__(self, x, y, width, height, ingredient):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.progress = 0
-        self.active = False
-        self.ingredients = []
-        self.visible = False
-        self.ingredient = ingredient
         super().__init__(x, y, width, height)
-        
-    def draw(self, screen, player_x, player_y, vision_radius):
-       
-        
-        # Draw station background
-        color = GREEN
-        pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(screen, LIGHT_GRAY, (self.x, self.y, self.width, self.height), 2)
-        
-        # Draw station label
-        font = pygame.font.SysFont(None, 30)
-        text = font.render(self.ingredient.type.name.capitalize(), True, WHITE)
-        screen.blit(text, (self.x + 10, self.y + 10))
-        
-        # Draw progress if active
+        self.ingredient = ingredient
+        self.active = False
+        self.progress = 0
+
+        # Load the ingredient image
+        self.image = None
+        image_path = self.INGREDIENT_IMAGES.get(self.ingredient.type)
+        if image_path:
+            try:
+                self.image = pygame.image.load(image_path).convert_alpha()
+                self.image = pygame.transform.scale(self.image, (self.width, self.height))
+            except Exception as e:
+                print(f"Failed to load image {image_path}: {e}")
+
+    def draw(self, screen, player_x=None, player_y=None, vision_radius=None):
+        # Always draw the image if loaded
+        if self.image:
+            screen.blit(self.image, (self.x, self.y))
+        else:
+            # fallback if image not found
+            pygame.draw.rect(screen, (200, 200, 200), (self.x, self.y, self.width, self.height))
+            pygame.draw.rect(screen, (50, 50, 50), (self.x, self.y, self.width, self.height), 2)
+
+        # draw progress bar if active
         if self.active and self.progress > 0:
-            pygame.draw.rect(screen, GREEN, (self.x, self.y + self.height - 10, self.width * (self.progress / 100), 10))
-        
-        self.ingredient.draw(screen, player_x, player_y, vision_radius)
-        
+            pygame.draw.rect(screen, (0, 255, 0),
+                             (self.x, self.y + self.height - 10,
+                              int(self.width * (self.progress / 100)), 10))
