@@ -286,7 +286,7 @@ class HauntedKitchen:
 
         # Spawn new ghosts if haunt level is high
         self.ghost_spawn_timer += 1
-        if self.ghost_spawn_timer > 300 and len(self.ghosts) < 8 and self.haunt_level > 30:
+        if self.ghost_spawn_timer > 300 and len(self.ghosts) < 30 and self.haunt_level > 30:
             side = random.choice(["top", "bottom", "left", "right"])
             if side == "top":
                 x, y = random.randint(0, constants.SCREEN_WIDTH), -50
