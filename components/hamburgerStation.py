@@ -1,5 +1,3 @@
-
-
 import pygame
 from components.collisionObject import CollisionObject
 from components.ingredient import Ingredient, IngredientType
@@ -16,6 +14,10 @@ class HamburgerStation(CollisionObject):
         
         self.active = False
         self.progress = 0
+
+        # Load the sprite
+        self.sprite = pygame.image.load("sprites/AssemblyTafel2.0.png").convert_alpha()
+        self.sprite = pygame.transform.scale(self.sprite, (width, height))
         
         self.hamburgerItems = {
             "bun": {"present": False, "ingredient": Ingredient(self.x + (self.width / 6) * 1, self.y + self.height / 2, IngredientType.BUN)},
@@ -33,10 +35,8 @@ class HamburgerStation(CollisionObject):
         return all(self.hamburgerItems[item]["present"] for item in self.hamburgerItems)
         
     def draw(self, screen, player_x, player_y, vision_radius):
-        # Draw station background
-        color = GREEN
-        pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(screen, LIGHT_GRAY, (self.x, self.y, self.width, self.height), 2)
+        # Draw the sprite instead of the green rectangle
+        screen.blit(self.sprite, (self.x, self.y))
         
         # Draw station label
         font = pygame.font.SysFont(None, 30)
