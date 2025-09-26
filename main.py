@@ -77,7 +77,7 @@ class HauntedKitchen:
 
         # Create cooking stations
         self.stations = [
-            CookingStation(constants.SCREEN_WIDTH - 350, 300, 50, 150, "chopping"),
+            CookingStation(constants.SCREEN_WIDTH - 400, 300, 100, 100, "chopping"),
             CookingStation(400, 250, 150, 50, "cooking"),
             CookingStation(constants.SCREEN_WIDTH - 50, constants.SCREEN_HEIGHT - self.safe_zone.height - 150, 50, 150, "baking"),
             CookingStation(400,
