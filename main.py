@@ -224,7 +224,7 @@ class HauntedKitchen:
             # Check collision with player
             dist = math.hypot(ghost.x - self.player.x, ghost.y - self.player.y)
 
-            if dist >= 0 and dist <= 300:
+            if dist >= 280 and dist <= 300:
                 play_soundeffect("ghost")
 
             if dist < ghost.radius + self.player.radius:
