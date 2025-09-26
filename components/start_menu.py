@@ -47,32 +47,43 @@ class StartMenu:
         return None
 
     def draw(self, screen: pygame.Surface):
-        # Draw background image
         screen.blit(self.bg_image, (0, 0))
 
-        # Draw logo centered at top
+        # Draw logo
         logo_x = constants.SCREEN_WIDTH // 2 - self.logo.get_width() // 2
-        screen.blit(self.logo, (logo_x, 20))  # keep logo near top
+        screen.blit(self.logo, (logo_x, 20))
 
-        # Prepare text surfaces
-        text_surfaces = [self.font_small.render(line, True, self.instruction_color)
-                         for line in self.instructions]
+        # Split instructions into logical blocks
+        blocks = [
+            ["Move with WASD or Arrow Keys"],
+            ["Collect ingredients and take them to stations",
+             "Use SPACE at stations to prepare food"],
+            ["Press ENTER to start", "Press ESC to quit"]
+        ]
 
-        # Calculate rectangle size that fits text exactly
-        max_width = max(surf.get_width() for surf in text_surfaces)
-        total_height = sum(surf.get_height() + self.spacing for surf in text_surfaces) - self.spacing
+        # Draw each block separately
+        rect_x = 40  # left margin
+        current_y = 400  # start below logo
 
-        # Top-left corner fixed offset
-        rect_x = 20
-        rect_y = 20  # strictly top-left now
-        rect_width = max_width + self.text_padding * 2
-        rect_height = total_height + self.text_padding * 2
+        for block in blocks:
+            text_surfaces = [self.font_small.render(line, True, self.instruction_color)
+                             for line in block]
+            max_width = max(surf.get_width() for surf in text_surfaces)
+            total_height = sum(surf.get_height() + self.spacing for surf in text_surfaces) - self.spacing
 
-        # Draw rounded rectangle
-        pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), border_radius=self.corner_radius)
+            rect_width = max_width + self.text_padding * 2
+            rect_height = total_height + self.text_padding * 2
 
-        # Draw each line of text inside the rectangle
-        text_y = rect_y + self.text_padding
-        for surf in text_surfaces:
-            screen.blit(surf, (rect_x + self.text_padding, text_y))
-            text_y += surf.get_height() + self.spacing
+            # Draw semi-transparent rounded rectangle
+            s = pygame.Surface((rect_width, rect_height), pygame.SRCALPHA)
+            pygame.draw.rect(s, (0, 0, 0, 180), (0, 0, rect_width, rect_height), border_radius=self.corner_radius)
+            screen.blit(s, (rect_x, current_y))
+
+            # Draw text
+            text_y = current_y + self.text_padding
+            for surf in text_surfaces:
+                screen.blit(surf, (rect_x + self.text_padding, text_y))
+                text_y += surf.get_height() + self.spacing
+
+            # Add space before next block
+            current_y += rect_height + 20
