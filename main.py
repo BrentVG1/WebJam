@@ -36,6 +36,7 @@ class HauntedKitchen:
         self.debug = False
         self.menu = StartMenu()
         self.player_in_zone = False
+        self.last_known_location = None
 
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
@@ -178,7 +179,7 @@ class HauntedKitchen:
 
         # Create footprints at intervals
         # Create footprints at intervals
-        if not keys[pygame.K_LSHIFT]:
+        if not keys[pygame.K_LSHIFT] and (not self.player.x - self.old_player_x == 0 or not self.player.y - self.old_player_y == 0):
             if self.player.footprint_timer >= self.player.footprint_interval:
                 dx = self.player.x - self.old_player_x
                 dy = self.player.y - self.old_player_y
@@ -187,9 +188,11 @@ class HauntedKitchen:
                     self.footprints.append(
                         Footprint(self.player.x, self.player.y, angle))
                 self.player.footprint_timer = 0
-
+                self.last_known_location = self.player.x, self.player.y
+        
             # Update footprints (and remove faded ones)
         self.footprints = [f for f in self.footprints if f.update()]
+        
 
         self.player_in_zone = self.safe_zone.in_zone(
             self.player.x, self.player.y)
@@ -198,9 +201,9 @@ class HauntedKitchen:
         for ghost in self.ghosts:
             # Some ghost.update signatures may differ; call safely
             try:
-                ghost.update(self.player, self.footprints, self.player_in_zone)
+                ghost.update(self.last_known_location, self.footprints, self.player_in_zone)
             except TypeError:
-                ghost.update(self.player, None, self.player_in_zone)
+                ghost.update(self.last_known_location, None, self.player_in_zone)
 
             # Check collision with player
             dist = math.hypot(ghost.x - self.player.x, ghost.y - self.player.y)

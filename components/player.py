@@ -80,6 +80,11 @@ class Player:
             self.x += self.speed
             self.direction = "right"
             moved = True
+            
+        if keys[pygame.K_LSHIFT]:
+            self.speed = 2
+        else:
+            self.speed = 5
 
         # animatie cycle updaten
         if moved:

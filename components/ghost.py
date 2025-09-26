@@ -25,6 +25,7 @@ class Ghost:
         self.current_patrol_index = 0
         self.visible = False
         self.safe_zone_height = safe_zone_height
+        self.dont_know_where_to_go = False
         
         self.setup_patrol_points()
     
@@ -36,11 +37,14 @@ class Ghost:
                 random.randint(100, SCREEN_HEIGHT - self.safe_zone_height - 100)
             ))
     
-    def update(self, player, footprints, player_in_safe_zone):
+    def update(self, last_known_location, footprints, player_in_safe_zone):
         # Dynamic type switching: Followers become patrollers when player is in safe zone
         
+        if self.dont_know_where_to_go and len(footprints) != 0:
+            self.dont_know_where_to_go = False
+        
         # Behavior based on current type
-        if self.current_type == GhostType.PATROLLER or player_in_safe_zone or len(footprints) == 0:
+        if self.current_type == GhostType.PATROLLER or player_in_safe_zone or self.dont_know_where_to_go or last_known_location == None:
             # Patrol behavior
             target = self.patrol_points[self.current_patrol_index]
             self.target_x, self.target_y = target
@@ -66,8 +70,10 @@ class Ghost:
                 self.target_y = brightest_footprint.y
             else:
                 # If no footprints, follow player directly
-                self.target_x = player.x
-                self.target_y = player.y
+                self.target_x = last_known_location[0]
+                self.target_y = last_known_location[1]
+                if abs(self.target_x - self.x) < 5 and abs(self.target_y - self.y) < 5:
+                    self.dont_know_where_to_go = True
         
         # Move towards target
         dx = self.target_x - self.x
