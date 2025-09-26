@@ -99,7 +99,7 @@ class Player:
             moved = True
             
         if keys[pygame.K_LSHIFT]:
-            self.speed = 2
+            self.speed = 1.5
         else:
             self.speed = 5
 

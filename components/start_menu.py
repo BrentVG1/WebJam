@@ -29,11 +29,12 @@ class StartMenu:
 
         # Top-left: gameplay info (non-controls)
         self.top_instructions = [
-            "Red ghosts follow your footsteps",
+            "Red ghosts follow your footsteps!",
             "Blue ghosts patrol the stations",
             "If your burger is ready,",
-            "deliver it to the customers",
-            "in the safe zone!"
+            "deliver it to the customers as fast as possible!",
+            "Keep an eye out for your fear level,",
+            "only making burgers will safe you!"
         ]
 
         # Bottom-right: controls
@@ -44,6 +45,15 @@ class StartMenu:
             "",
             "Press ENTER to start",
             "Press ESC to quit",
+        ]
+        
+        self.recipe = [
+            "A burger is made by:",
+            "- Cutting lettuce",
+            "- Cutting tomato",
+            "- Applying cheese",
+            "- Baking a patty",
+            "- Taking a bun"
         ]
 
     def handle_event(self, event) -> str | None:
@@ -87,6 +97,7 @@ class StartMenu:
 
         # Draw top-left box (non-control instructions)
         self.draw_box(screen, self.top_instructions, 40, 40)
+        self.draw_box(screen, self.recipe, 40, 700)
 
         # Draw bottom-right box (controls)
         bottom_margin = 40

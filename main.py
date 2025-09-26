@@ -64,7 +64,7 @@ class HauntedKitchen:
     def reset_game(self):
         # Create player
         self.score = 0
-        self.player = Player(100,
+        self.player = Player(constants.SCREEN_WIDTH // 2,
                              constants.SCREEN_HEIGHT - 100)
         self.old_player_x = self.player.x
         self.old_player_y = self.player.y
@@ -327,7 +327,8 @@ class HauntedKitchen:
 
         # Increase haunt level over time
         # Increase/decrease haunt level afhankelijk van safe zone
-        self.haunt_level += 0.01 + (0.003 * len(self.ghosts))  # stijgt buiten safe zone
+        if not self.player_in_zone:
+            self.haunt_level += 0.01 + (0.003 * len(self.ghosts))  # stijgt buiten safe zone
         self.haunt_level = max(0, min(self.haunt_level, self.max_haunt_level))
 
         # Spawn new ghosts if haunt level is high
