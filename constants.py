@@ -15,6 +15,7 @@ BROWN = (139, 69, 19)
 DARK_GRAY = (40, 40, 40)
 LIGHT_GRAY = (200, 200, 200)
 GHOST_WHITE = (240, 240, 255, 180)
+GRAY = (128, 128, 128)
 
 from enum import Enum
 

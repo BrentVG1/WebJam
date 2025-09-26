@@ -6,13 +6,14 @@ import constants
 
 
 class CollisionObject:
-    def __init__(self, x, y, width, height, color=constants.RED):
+    def __init__(self, x, y, width, height, color=constants.GRAY):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.color = color
         self.obj_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.img = None        
         
         
     def draw(self, screen):
