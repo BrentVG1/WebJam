@@ -31,30 +31,28 @@ class Ingredient:
         # else:  # SPICE
         if ingredient_type == IngredientType.LETTUCE:
             self.image = pygame.image.load("sprites/KropSla.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
             self.processed_image = pygame.image.load("sprites/GesnedenSla.png").convert_alpha()
-            self.processed_image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.processed_image = pygame.transform.scale(self.processed_image, (self.radius * 4, self.radius * 4))
         elif ingredient_type == IngredientType.CHEESE:
             self.image = pygame.image.load("sprites/CheddarKaas.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
         elif ingredient_type == IngredientType.TOMATO:
             self.image = pygame.image.load("sprites/Tomaat.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
             self.processed_image = pygame.image.load("sprites/GesnedenTomaten-1.png").convert_alpha()
-            self.processed_image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.processed_image = pygame.transform.scale(self.processed_image, (self.radius * 4, self.radius * 4))
         elif ingredient_type == IngredientType.PATTY:
             self.image = pygame.image.load("sprites/Patty.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
             self.processed_image = pygame.image.load("sprites/gebakkenPatty.png").convert_alpha()
-            self.processed_image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.processed_image = pygame.transform.scale(self.processed_image, (self.radius * 4, self.radius * 4))
         elif ingredient_type == IngredientType.BUN:
             self.image = pygame.image.load("sprites/Buns.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
         else:
             raise ValueError(f"Unknown ingredient type: {ingredient_type}")
 
-        # Scale image to match the "radius"
-        self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
 
     def draw(self, screen, player_x, player_y, vision_radius, debug=False):
         if not self.collected:
@@ -67,5 +65,10 @@ class Ingredient:
 
             if self.visible:
                 rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-                screen.blit(self.image, rect)
+                if self.processed:
+                    screen.blit(self.processed_image, rect)
+                else:
+                    screen.blit(self.image, rect)
+
+      
 

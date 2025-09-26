@@ -139,7 +139,11 @@ class Player:
 
         # Draw carried item spinning above head
         if self.carrying:
-            img = pygame.transform.scale(self.carrying.image, (40, 40))
+            if self.carrying.processed:
+                img_s = self.carrying.processed_image
+            else:
+                img_s = self.carrying.image
+            img = pygame.transform.scale(img_s, (40, 40))
             angle = (pygame.time.get_ticks() // 5) % 360
             img = pygame.transform.rotate(img, angle)
             rect = img.get_rect(center=(int(self.x), int(self.y - self.radius*2)))
