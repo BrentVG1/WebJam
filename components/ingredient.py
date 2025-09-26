@@ -5,9 +5,11 @@ from constants import *
 
 
 class IngredientType(Enum):
-    VEGETABLE = 0
-    MEAT = 1
-    SPICE = 2
+    LETTUCE = 0
+    CHEESE = 1
+    TOMATO = 2
+    PATTY = 3
+    BUN = 4
 
 
 class Ingredient:
@@ -20,12 +22,12 @@ class Ingredient:
         self.visible = False
 
         # Load the correct PNG image based on type
-        if ingredient_type == IngredientType.VEGETABLE:
-            self.image = pygame.image.load("sprites/vegetable/tile000.png").convert_alpha()
-        elif ingredient_type == IngredientType.MEAT:
-            self.image = pygame.image.load("sprites/vegetable/tile001.png").convert_alpha()
-        else:  # SPICE
-            self.image = pygame.image.load("sprites/vegetable/tile002.png").convert_alpha()
+        # if ingredient_type == IngredientType.VEGETABLE:
+        #     self.image = pygame.image.load("sprites/vegetable/tile000.png").convert_alpha()
+        # elif ingredient_type == IngredientType.MEAT:
+        #     self.image = pygame.image.load("sprites/vegetable/tile001.png").convert_alpha()
+        # else:  # SPICE
+        self.image = pygame.image.load("sprites/vegetable/tile002.png").convert_alpha()
 
         # Scale image to match the "radius"
         self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))

@@ -4,6 +4,7 @@ import random
 import pygame
 
 from components.collisionObject import CollisionObject
+from components.itemStation import ItemStation
 import constants  # use namespaced constants everywhere
 
 from components.SafeZone import SafeZone
@@ -33,7 +34,7 @@ class HauntedKitchen:
         pygame.display.set_caption("Haunted Kitchen")
         self.clock = pygame.time.Clock()
         self.state = constants.GameState.MENU
-        self.debug = False
+        self.debug = True
         self.menu = StartMenu()
         self.player_in_zone = False
         self.last_known_location = None
@@ -73,23 +74,22 @@ class HauntedKitchen:
 
         # Create ingredients
         self.ingredients = []
-        for _ in range(8):
-            ingredient_type = random.choice(list(IngredientType))
-            self.ingredients.append(
-                Ingredient(
-                    random.randint(100, constants.SCREEN_WIDTH - 100),
-                    random.randint(100, constants.SCREEN_HEIGHT - 100),
-                    ingredient_type,
-                )
-            )
 
         # Create cooking stations
         self.stations = [
             CookingStation(constants.SCREEN_WIDTH - 350, 300, 50, 150, "chopping"),
-            CookingStation(400, 200, 150, 100, "cooking"),
-            CookingStation(600, 200, 150, 100, "baking"),
-            CookingStation(constants.SCREEN_WIDTH - 350,
-                           200, 150, 100, "serving"),
+            CookingStation(400, 250, 150, 50, "cooking"),
+            CookingStation(constants.SCREEN_WIDTH - 50, constants.SCREEN_HEIGHT - self.safe_zone.height - 150, 50, 150, "baking"),
+            CookingStation(400,
+                           constants.SCREEN_HEIGHT - self.safe_zone.height - 50, 200, 50, "serving"),
+        ]
+        
+        self.item_stations = [
+            ItemStation(0, 0, 100, 100, Ingredient(50 ,50, IngredientType.LETTUCE)),
+            ItemStation(100, 0, 100, 100, Ingredient(150 ,50, IngredientType.TOMATO)),
+            ItemStation(200, 0, 100, 100, Ingredient(250 ,50, IngredientType.CHEESE)),
+            ItemStation(constants.SCREEN_WIDTH - 100, 0, 100, 100, Ingredient(constants.SCREEN_WIDTH - 50 ,50, IngredientType.PATTY)),
+            ItemStation(500, 450, 100, 50, Ingredient(550 ,475, IngredientType.BUN)),
         ]
 
 
@@ -160,7 +160,7 @@ class HauntedKitchen:
         keys = pygame.key.get_pressed()
 
         # Update player
-        self.player.update(keys, [obj.obj_rect for obj in self.colliding_objects])
+        self.player.update(keys, [obj.obj_rect for obj in self.colliding_objects] + [obj.obj_rect for obj in self.stations] + [obj.obj_rect for obj in self.item_stations])
 
         # Player handles ingredient pickup internally (single carry slot)
         if hasattr(self.player, "try_auto_pickup_nearby"):
@@ -337,6 +337,15 @@ class HauntedKitchen:
                                  self.player.y, self.vision_radius)
                 except TypeError:
                     station.draw(self.screen)
+                    
+        for item_station in self.item_stations:
+            if self.is_in_vision(item_station.x + item_station.width // 2, item_station.y + item_station.height // 2,
+                                 max(item_station.width, item_station.height)) or self.debug:
+                try:
+                    item_station.draw(self.screen, self.player.x,
+                                 self.player.y, self.vision_radius)
+                except TypeError:
+                    item_station.draw(self.screen)
 
         for ingredient in self.ingredients:
             if (not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius)) or self.debug:

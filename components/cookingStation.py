@@ -1,9 +1,10 @@
 import math
 import pygame
+from components.collisionObject import CollisionObject
 from constants import *
 
 
-class CookingStation:
+class CookingStation(CollisionObject):
     def __init__(self, x, y, width, height, station_type):
         self.x = x
         self.y = y
@@ -14,6 +15,7 @@ class CookingStation:
         self.active = False
         self.ingredients = []
         self.visible = False
+        super().__init__(x, y, width, height)
         
     def draw(self, screen):
        
