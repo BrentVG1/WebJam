@@ -139,8 +139,10 @@ class Player:
         scale_factor = 2
         sprite_scaled = pygame.transform.scale(sprite, (sprite.get_width() * scale_factor, sprite.get_height() * scale_factor))
 
-        sprite_rect = sprite_scaled.get_rect(center=(int(self.x), int(self.y)))
+        offset_y = -25  # adjust this number as needed
+        sprite_rect = sprite_scaled.get_rect(center=(int(self.x), int(self.y + offset_y)))
         screen.blit(sprite_scaled, sprite_rect)
+
 
         # Draw carried item spinning above head
         if self.carrying:
@@ -151,5 +153,5 @@ class Player:
             img = pygame.transform.scale(img_s, (40, 40))
             angle = (pygame.time.get_ticks() // 5) % 360
             img = pygame.transform.rotate(img, angle)
-            rect = img.get_rect(center=(int(self.x), int(self.y - self.radius*2)))
+            rect = img.get_rect(center=(int(self.x), int(self.y + -25 - self.radius*2)))
             screen.blit(img, rect)
