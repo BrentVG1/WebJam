@@ -40,7 +40,7 @@ class Ghost:
         # Dynamic type switching: Followers become patrollers when player is in safe zone
         
         # Behavior based on current type
-        if self.current_type == GhostType.PATROLLER or player_in_safe_zone:
+        if self.current_type == GhostType.PATROLLER or player_in_safe_zone or len(footprints) == 0:
             # Patrol behavior
             target = self.patrol_points[self.current_patrol_index]
             self.target_x, self.target_y = target

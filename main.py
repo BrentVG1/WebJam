@@ -178,16 +178,17 @@ class HauntedKitchen:
 
         # Create footprints at intervals
         # Create footprints at intervals
-        if self.player.footprint_timer >= self.player.footprint_interval:
-            dx = self.player.x - self.old_player_x
-            dy = self.player.y - self.old_player_y
-            if dx != 0 or dy != 0:
-                angle = math.degrees(math.atan2(-dy, dx))
-                self.footprints.append(
-                    Footprint(self.player.x, self.player.y, angle))
-            self.player.footprint_timer = 0
+        if not keys[pygame.K_LSHIFT]:
+            if self.player.footprint_timer >= self.player.footprint_interval:
+                dx = self.player.x - self.old_player_x
+                dy = self.player.y - self.old_player_y
+                if dx != 0 or dy != 0:
+                    angle = math.degrees(math.atan2(-dy, dx))
+                    self.footprints.append(
+                        Footprint(self.player.x, self.player.y, angle))
+                self.player.footprint_timer = 0
 
-        # Update footprints (and remove faded ones)
+            # Update footprints (and remove faded ones)
         self.footprints = [f for f in self.footprints if f.update()]
 
         self.player_in_zone = self.safe_zone.in_zone(
@@ -241,7 +242,7 @@ class HauntedKitchen:
                         station.progress = 0
 
         # Increase haunt level over time
-        self.haunt_level += 0.05
+        self.haunt_level += 0.01
 
         # Spawn new ghosts if haunt level is high
         self.ghost_spawn_timer += 1
