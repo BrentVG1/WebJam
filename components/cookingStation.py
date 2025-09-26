@@ -15,20 +15,35 @@ class CookingStation(CollisionObject):
         self.active = False
         self.ingredients = []
         self.visible = False
+        self.texture = None
+        if self.type == "chopping":
+            self.texture = pygame.image.load("sprites/Snijplank.png").convert_alpha()
+            self.texture = pygame.transform.scale(self.texture, (self.width, self.height))
+        # elif self.type == "cooking":
+        #     self.texture = pygame.image.load("sprites/cooking_station.png").convert_alpha()
+        # elif self.type == "serving":
+        #     self.texture = pygame.image.load("sprites/serving_station.png").convert_alpha()
+        # elif self.type == "baking":
+        #     self.texture = pygame.image.load("sprites/baking_station.png").convert_alpha()
         super().__init__(x, y, width, height)
         
     def draw(self, screen):
+        
+        if self.texture:
+            screen.blit(self.texture, (self.x, self.y))
+            
+        else:
        
         
-        # Draw station background
-        color = BROWN if self.type == "chopping" else (100, 100, 100) if self.type == "cooking" else PURPLE
-        pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(screen, LIGHT_GRAY, (self.x, self.y, self.width, self.height), 2)
-        
-        # Draw station label
-        font = pygame.font.SysFont(None, 30)
-        text = font.render(self.type.capitalize(), True, WHITE)
-        screen.blit(text, (self.x + 10, self.y + 10))
+            # Draw station background
+            color = BROWN if self.type == "chopping" else (100, 100, 100) if self.type == "cooking" else PURPLE
+            pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
+            pygame.draw.rect(screen, LIGHT_GRAY, (self.x, self.y, self.width, self.height), 2)
+            
+            # Draw station label
+            font = pygame.font.SysFont(None, 30)
+            text = font.render(self.type.capitalize(), True, WHITE)
+            screen.blit(text, (self.x + 10, self.y + 10))
         
         # Draw progress if active
         if self.active and self.progress > 0:
