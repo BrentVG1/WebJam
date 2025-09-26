@@ -25,6 +25,8 @@ class Player:
         self.sprites = {}
         self.sprites["down"] = pygame.image.load(os.path.join("sprites", "rat_chef.png")).convert_alpha()
         self.sprites["up"] = pygame.image.load(os.path.join("sprites", "rat_chef_back-1.png")).convert_alpha()
+        self.sprites["left"] = pygame.image.load(os.path.join("sprites", "rat_chef_left.png")).convert_alpha()
+        self.sprites["right"] = pygame.image.load(os.path.join("sprites", "rat_chef_right.png")).convert_alpha()
         # You can later add "left" and "right" if needed
 
     # ---------- carry helpers ----------
@@ -80,9 +82,11 @@ class Player:
             moved = True
         if keys[pygame.K_q] or keys[pygame.K_LEFT]:
             self.x -= self.speed
+            self.direction = "left"
             moved = True
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.x += self.speed
+            self.direction = "right"
             moved = True
             
         if keys[pygame.K_LSHIFT]:
@@ -115,7 +119,7 @@ class Player:
     # ---------- tekenen ----------
     def draw(self, screen):
         # Draw the sprite instead of shapes
-        if self.direction in ["up", "down"]:
+        if self.direction in ["up", "down", "left", "right"]:
             sprite = self.sprites[self.direction]
         else:
             # fallback
