@@ -17,13 +17,17 @@ class FogOfWar:
         vision_surface.fill((0, 0, 0, 0))  # Transparent
         
         
-        # Draw gradient circle
         center = (self.vision_radius, self.vision_radius)
         for radius in range(self.vision_radius, 0, -1):
-            # Smooth gradient from center to edge
-            alpha = int(255 * (radius / self.vision_radius))
-            color = (0, 0, 0,  alpha)  # More transparent in center
+            if radius > self.vision_radius // 2:
+                # fade from clear (0) at half radius to opaque (255) at edge
+                fade_ratio = (radius - self.vision_radius // 2) / (self.vision_radius / 2)
+                alpha = int(255 * fade_ratio)
+            else:
+                alpha = 0  # fully clear in the inner half
+            color = (0, 0, 0, alpha)
             pygame.draw.circle(vision_surface, color, center, radius)
+
         
         # Apply the vision hole to the fog
         fog_surface.blit(vision_surface, 
