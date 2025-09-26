@@ -63,8 +63,9 @@ class HauntedKitchen:
 
     def reset_game(self):
         # Create player
+        self.score = 0
         self.player = Player(100,
-                             300)
+                             constants.SCREEN_HEIGHT - 100)
         self.old_player_x = self.player.x
         self.old_player_y = self.player.y
 
@@ -130,7 +131,6 @@ class HauntedKitchen:
         self.haunt_level = 0
         self.max_haunt_level = 100
         self.dishes_served = 0
-        self.dishes_needed = 3
         self.ghost_spawn_timer = 0
 
     def handle_events(self):
@@ -266,10 +266,6 @@ class HauntedKitchen:
             if not len(closest_proximity_station) == 0:
                 closest_station = min(
                     closest_proximity_station, key=lambda x: x[1])
-                try:
-                    print(closest_station[0].type, closest_station[1])
-                except:
-                    pass
                 if closest_station[2] == "item":
                     if not (self.player.has_item() and self.player.carrying.type == IngredientType.HAMBURGER):
                         self.player.carrying = closest_station[0].ingredient
@@ -314,6 +310,7 @@ class HauntedKitchen:
                         closest_station[0].progress += 1 * self.dt
                     if closest_station[0].progress >= 100:
                         self.dishes_served += 1 
+                        self.score += int((self.max_haunt_level - self.haunt_level) * 10)
                         self.haunt_level = 0
                         # consume carried item
                         if hasattr(self.player, "consume"):
@@ -330,10 +327,7 @@ class HauntedKitchen:
 
         # Increase haunt level over time
         # Increase/decrease haunt level afhankelijk van safe zone
-        if self.player_in_zone:
-            self.haunt_level -= 0.05  # daalt in safe zone
-        else:
-            self.haunt_level += 0.03  # stijgt buiten safe zone
+        self.haunt_level += 0.01 + (0.003 * len(self.ghosts))  # stijgt buiten safe zone
         self.haunt_level = max(0, min(self.haunt_level, self.max_haunt_level))
 
         # Spawn new ghosts if haunt level is high
@@ -569,16 +563,21 @@ class HauntedKitchen:
 
         # Andere info linksboven
         dishes_text = self.font_small.render(
-            f"Dishes: {self.dishes_served}/{self.dishes_needed}", True, constants.WHITE
+            f"Dishes: {self.dishes_served}", True, constants.WHITE
         )
         ui_surface.blit(dishes_text, (50, 30))
+        
+        score_text = self.font_small.render(
+            f"Score: {self.score}", True, constants.WHITE
+        )
+        ui_surface.blit(score_text, (50, 70))
 
         ghosts_text = self.font_small.render(
             f"Ghosts: {len(self.ghosts)}", True, constants.WHITE
         )
-        ui_surface.blit(ghosts_text, (50, 70))
+        ui_surface.blit(ghosts_text, (50, 110))
 
-        if self.vision_radius == 2000:
+        if self.debug:
             debug_text = self.font_small.render(
                 "DEBUG: Full Visibility", True, constants.YELLOW
             )
@@ -598,6 +597,9 @@ class HauntedKitchen:
         text = self.font_large.render("GAME OVER", True, constants.RED)
         self.screen.blit(text, (constants.SCREEN_WIDTH // 2 -
                          text.get_width() // 2, constants.SCREEN_HEIGHT // 2))
+        text = self.font_large.render(f"Score: {self.score}", True, constants.RED)
+        self.screen.blit(text, (constants.SCREEN_WIDTH // 2 -
+                         text.get_width() // 2, constants.SCREEN_HEIGHT // 2 + 75))
 
     def draw_win(self):
         # Create a semi-transparent dark overlay
@@ -634,7 +636,7 @@ class HauntedKitchen:
         self.screen.blit(text_surface, text_rect)
 
         # Optional: subtitle
-        subtitle = self.font_medium.render(f"Dishes Served: {self.dishes_served}/{self.dishes_needed}", True,
+        subtitle = self.font_medium.render(f"Dishes Served: {self.dishes_served}", True,
                                            constants.WHITE)
         sub_rect = subtitle.get_rect(center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2 + 80))
         self.screen.blit(subtitle, sub_rect)
