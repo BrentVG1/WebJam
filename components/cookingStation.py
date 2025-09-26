@@ -13,7 +13,6 @@ class CookingStation(CollisionObject):
         self.type = station_type  # "chopping", "cooking", "serving"
         self.progress = 0
         self.active = False
-        self.ingredients = []
         self.visible = False
         self.texture = None
         if self.type == "chopping":

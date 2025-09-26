@@ -108,7 +108,7 @@ class HauntedKitchen:
         self.colliding_objects = [
             CollisionObject(
         300, 250, constants.SCREEN_WIDTH - 600, 250,
-        texture_path="tafel-modified.png"),
+        texture_path="wood_tile.png"),
             CollisionObject(0, constants.SCREEN_HEIGHT -
                             self.safe_zone.height - 5, 100, 10),
             CollisionObject(200, constants.SCREEN_HEIGHT -
@@ -236,42 +236,45 @@ class HauntedKitchen:
             for item_station in self.item_stations:
                 distance = item_station.distance_to_rect((self.player.x, self.player.y))
                 if distance < self.interaction_proximity:
-                    closest_proximity_station.append([item_station, "item"])
+                    closest_proximity_station.append([item_station, distance, "item"])
                     
             for station in self.stations:
                 distance = station.distance_to_rect((self.player.x, self.player.y))
                 if distance < self.interaction_proximity:
-                    closest_proximity_station.append([station, "station"])
+                    closest_proximity_station.append([station, distance, "station"])
             
             if not len(closest_proximity_station) == 0:
-                closest_station = min(closest_proximity_station, key=lambda x: x[0].distance_to_rect((self.player.x, self.player.y)))
-                if closest_station[1] == "item":
+                closest_station = min(closest_proximity_station, key=lambda x: x[1])
+                if closest_station[2] == "item":
                     self.player.carrying = closest_station[0].ingredient                
-                else:
+                elif self.player.carrying is not None and self.player.carrying.processed_by == closest_station[0].type and not self.player.carrying.processed:
                     # activate/progress
-                    if hasattr(station, "active"):
-                        station.active = True
-                    if hasattr(station, "progress"):
-                        station.progress += 1
+                    
+                    if hasattr(closest_station[0], "active"):
+                        closest_station[0].active = True
+                    if hasattr(closest_station[0], "progress"):
+                        closest_station[0].progress += 1
 
-                    # Serving station consumes carried item when complete
-                    if station.type == "serving" and getattr(self.player, "has_item", lambda: False)():
-                        if getattr(station, "progress", 0) >= 100:
+                    # Serving closest_station[0] consumes carried item when complete
+                    if closest_station[0].progress >= 100:
+                        if closest_station[0].type == "serving" and self.player.has_item():
                             self.dishes_served += 1
                             # consume carried item
                             if hasattr(self.player, "consume"):
                                 self.player.consume()
                             else:
                                 self.player.carrying = None
-                            station.progress = 0
+                            closest_station[0].progress = 0
 
                             if self.dishes_served >= self.dishes_needed:
                                 self.state = constants.GameState.WIN
-            else:
-                if hasattr(station, "active"):
-                    station.active = False
-                if hasattr(station, "progress"):
-                    station.progress = 0
+                        else: 
+                            self.player.carrying.processed = True
+                else:
+                    if hasattr(closest_station[0], "active"):
+                        closest_station[0].active = False
+                    if hasattr(closest_station[0], "progress"):
+                        closest_station[0].progress = 0
 
         # Increase haunt level over time
         # Increase/decrease haunt level afhankelijk van safe zone
