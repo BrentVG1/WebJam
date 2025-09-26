@@ -113,8 +113,11 @@ class HauntedKitchen:
 
         self.colliding_objects = [
             CollisionObject(
-        300, 250, constants.SCREEN_WIDTH - 600, 250,
-        texture_path="wood_tile.png"),
+            300, 250, constants.SCREEN_WIDTH - 1400, 250,
+            texture_path="wood_tile.png"),
+            CollisionObject(
+            constants.SCREEN_WIDTH - 830, 250, constants.SCREEN_WIDTH - 1400, 250,
+            texture_path="wood_tile.png"),
             CollisionObject(0, constants.SCREEN_HEIGHT -
                             self.safe_zone.height - 5, 100, 10),
             CollisionObject(200, constants.SCREEN_HEIGHT -
