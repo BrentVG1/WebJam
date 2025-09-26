@@ -271,7 +271,8 @@ class HauntedKitchen:
 
     # -------- drawing helpers --------
     def is_in_vision(self, x, y, radius=0):
-        """Check if an object is within the player's vision"""
+        """Check if an object
+            is within the player's vision"""
         distance = math.hypot(x - self.player.x, y - self.player.y)
         return distance <= self.vision_radius + radius
 
