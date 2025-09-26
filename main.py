@@ -583,13 +583,44 @@ class HauntedKitchen:
                          text.get_width() // 2, constants.SCREEN_HEIGHT // 2))
 
     def draw_win(self):
+        # Create a semi-transparent dark overlay
         overlay = pygame.Surface(
             (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
+        overlay.fill((0, 0, 0, 200))
         self.screen.blit(overlay, (0, 0))
-        text = self.font_large.render("YOU SURVIVED!", True, constants.GREEN)
-        self.screen.blit(text, (constants.SCREEN_WIDTH // 2 -
-                         text.get_width() // 2, constants.SCREEN_HEIGHT // 2))
+
+        # Animated floating sparkles
+        t = pygame.time.get_ticks() * 0.005
+        for _ in range(30):
+            x = random.randint(0, constants.SCREEN_WIDTH)
+            y = int((random.randint(0, constants.SCREEN_HEIGHT) + t * 50) % constants.SCREEN_HEIGHT)
+            radius = random.randint(2, 5)
+            alpha = random.randint(100, 255)
+            color = (255, 255, 200, alpha)
+            sparkle = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(sparkle, color, (radius, radius), radius)
+            self.screen.blit(sparkle, (x, y))
+
+        # Glowing text
+        message = "YOU SURVIVED!"
+        font = pygame.font.SysFont(None, 96)
+        text_surface = font.render(message, True, constants.GREEN)
+
+        # Create glow layers
+        for i in range(5, 0, -1):
+            glow_surf = font.render(message, True, (0, 255, 0, 50 // i))
+            glow_rect = glow_surf.get_rect(center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2))
+            self.screen.blit(glow_surf, glow_rect)
+
+        # Main text on top
+        text_rect = text_surface.get_rect(center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2))
+        self.screen.blit(text_surface, text_rect)
+
+        # Optional: subtitle
+        subtitle = self.font_medium.render(f"Dishes Served: {self.dishes_served}/{self.dishes_needed}", True,
+                                           constants.WHITE)
+        sub_rect = subtitle.get_rect(center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2 + 80))
+        self.screen.blit(subtitle, sub_rect)
 
     def run(self):
         try:
