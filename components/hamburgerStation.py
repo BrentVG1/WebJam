@@ -21,10 +21,10 @@ class HamburgerStation(CollisionObject):
         
         self.hamburgerItems = {
             "bun": {"present": False, "ingredient": Ingredient(self.x + (self.width / 6) * 1, self.y + self.height / 2, IngredientType.BUN)},
-            "patty": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 2, self.y + self.height / 2, IngredientType.PATTY)},
-            "lettuce": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 3, self.y + self.height / 2, IngredientType.LETTUCE)},
-            "tomato": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 4, self.y + self.height / 2, IngredientType.TOMATO)},
-            "cheese": {"present": True, "ingredient": Ingredient(self.x + (self.width / 6) * 5, self.y + self.height / 2, IngredientType.CHEESE)},
+            "patty": {"present": False, "ingredient": Ingredient(self.x + (self.width / 6) * 2, self.y + self.height / 2, IngredientType.PATTY)},
+            "lettuce": {"present": False, "ingredient": Ingredient(self.x + (self.width / 6) * 3, self.y + self.height / 2, IngredientType.LETTUCE)},
+            "tomato": {"present": False, "ingredient": Ingredient(self.x + (self.width / 6) * 4, self.y + self.height / 2, IngredientType.TOMATO)},
+            "cheese": {"present": False, "ingredient": Ingredient(self.x + (self.width / 6) * 5, self.y + self.height / 2, IngredientType.CHEESE)},
         }
         self.hamburgerItems["patty"]["ingredient"].processed = True
         self.hamburgerItems["lettuce"]["ingredient"].processed = True
@@ -37,11 +37,6 @@ class HamburgerStation(CollisionObject):
     def draw(self, screen, player_x, player_y, vision_radius):
         # Draw the sprite instead of the green rectangle
         screen.blit(self.sprite, (self.x, self.y))
-        
-        # Draw station label
-        font = pygame.font.SysFont(None, 30)
-        text = font.render("Hamburger", True, WHITE)
-        screen.blit(text, (self.x + 10, self.y + 10))
         
         if self.deliverable():
             self.hamburger.draw(screen, player_x, player_y, vision_radius)

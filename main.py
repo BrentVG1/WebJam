@@ -38,7 +38,7 @@ class HauntedKitchen:
         pygame.display.set_caption("Haunted Kitchen")
         self.clock = pygame.time.Clock()
         self.state = constants.GameState.MENU
-        self.debug = True
+        self.debug = False
         self.menu = StartMenu()
         self.player_in_zone = False
         self.last_known_location = None
