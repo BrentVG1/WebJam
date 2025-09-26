@@ -3,12 +3,12 @@ import random
 
 def play_music():
     music_list = [
-        "Assets\\Walen - Vampire Dracula (freetouse.com).mp3",
-        "Assets\\Aylex - Arrival (freetouse.com).mp3",
-        "Assets\\Aylex - Tension Rising (freetouse.com).mp3",
-        "Assets\\Project Ex - Area 16 (freetouse.com).mp3",
-        "Assets\\Pufino - Arbiters Trial (freetouse.com).mp3",
-        "Assets\Call-of-Duty-Black-Ops-Zombies-Main-Menu-Theme.mp3"
+        "Assets/Walen - Vampire Dracula (freetouse.com).mp3",
+        "Assets/Aylex - Arrival (freetouse.com).mp3",
+        "Assets/Aylex - Tension Rising (freetouse.com).mp3",
+        "Assets/Project Ex - Area 16 (freetouse.com).mp3",
+        "Assets/Pufino - Arbiters Trial (freetouse.com).mp3",
+        "Assets/Call-of-Duty-Black-Ops-Zombies-Main-Menu-Theme.mp3"
     ]
 
     pygame.mixer.music.load(music_list[random.randint(0, 5)])

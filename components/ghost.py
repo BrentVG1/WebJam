@@ -58,7 +58,9 @@ class Ghost:
         else:
             self.image = None  # fallback als er geen afbeeldingen zijn
 
-    def update(self, last_known_location, footprints, player_in_safe_zone):
+    def update(self, last_known_location, footprints, player_in_safe_zone, dt):
+        # dt is in seconds (clock.tick(60) / 1000)
+
         if self.dont_know_where_to_go and len(footprints) != 0:
             self.dont_know_where_to_go = False
 
@@ -66,14 +68,14 @@ class Ghost:
             # Patrol behavior
             target = self.patrol_points[self.current_patrol_index]
             self.target_x, self.target_y = target
-            if math.sqrt((self.x - target[0]) ** 2 + (self.y - target[1]) ** 2) < 20:
+            if math.dist((self.x, self.y), target) < 20:
                 self.current_patrol_index = (self.current_patrol_index + 1) % len(self.patrol_points)
         elif self.current_type == GhostType.FOLLOWER:
             # Hunting/following behavior
             brightest_footprint = None
             max_brightness = 0
             for footprint in footprints:
-                dist = math.sqrt((self.x - footprint.x) ** 2 + (self.y - footprint.y) ** 2)
+                dist = math.dist((self.x, self.y), (footprint.x, footprint.y))
                 if dist < self.detection_range and footprint.brightness > max_brightness:
                     max_brightness = footprint.brightness
                     brightest_footprint = footprint
@@ -81,23 +83,25 @@ class Ghost:
                 self.target_x = brightest_footprint.x
                 self.target_y = brightest_footprint.y
             else:
-                self.target_x = last_known_location[0]
-                self.target_y = last_known_location[1]
+                self.target_x, self.target_y = last_known_location
                 if abs(self.target_x - self.x) < 5 and abs(self.target_y - self.y) < 5:
                     self.dont_know_where_to_go = True
 
-        # Move towards target
+        # --- Move towards target with dt ---
         dx = self.target_x - self.x
         dy = self.target_y - self.y
-        dist = max(0.1, math.sqrt(dx * dx + dy * dy))
-        new_x = self.x + (dx / dist) * self.speed
-        new_y = self.y + (dy / dist) * self.speed
+        dist = max(0.1, math.hypot(dx, dy))
 
-        # Boundary constraints
-        new_x = max(self.radius, min(SCREEN_WIDTH - self.radius, new_x))
-        new_y = max(self.radius, min(SCREEN_HEIGHT - self.safe_zone_height - self.radius, new_y))
-        self.x = new_x
-        self.y = new_y
+        move_dist = self.speed * dt  # pixels to move this frame
+        if move_dist > dist:  # don’t overshoot
+            move_dist = dist
+
+        self.x += (dx / dist) * move_dist
+        self.y += (dy / dist) * move_dist
+
+        # --- Boundary constraints ---
+        self.x = max(self.radius, min(SCREEN_WIDTH - self.radius, self.x))
+        self.y = max(self.radius, min(SCREEN_HEIGHT - self.safe_zone_height - self.radius, self.y))
 
     def draw(self, screen):
         size = self.radius * 2

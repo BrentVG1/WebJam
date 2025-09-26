@@ -4,6 +4,7 @@ import random
 import pygame
 
 from components.collisionObject import CollisionObject
+from components.hamburgerStation import HamburgerStation
 from components.itemStation import ItemStation
 import constants  # use namespaced constants everywhere
 
@@ -30,6 +31,8 @@ pygame.mixer.music.set_endevent(MUSIC_END)
 class HauntedKitchen:
     def __init__(self):
         self.vision_radius = 300
+        self.clock = pygame.time.Clock()
+        self.dt =  0
         self.screen = pygame.display.set_mode(
             (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
         pygame.display.set_caption("Haunted Kitchen")
@@ -39,7 +42,7 @@ class HauntedKitchen:
         self.menu = StartMenu()
         self.player_in_zone = False
         self.last_known_location = None
-        self.interaction_proximity = 25
+        self.interaction_proximity = 35
 
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
@@ -85,12 +88,15 @@ class HauntedKitchen:
         # Create cooking stations
         self.stations = [
             CookingStation(constants.SCREEN_WIDTH - 400,
-                           300, 100, 100, "chopping"),
-            CookingStation(400, 250, 100, 100, "cooking"),
+                           300, 100, 100, "cooking"),
+            CookingStation(400, 250, 100, 100, "chopping"),
   
             CookingStation(400,
                            constants.SCREEN_HEIGHT - self.safe_zone.height, 120, 100, "serving"),
         ]
+        
+        self.hamburger_station = HamburgerStation(
+            600, constants.SCREEN_HEIGHT - self.safe_zone.height - 100, 300, 100)
 
         self.item_stations = [
             ItemStation(0, 0, 100, 100, Ingredient(
@@ -125,6 +131,7 @@ class HauntedKitchen:
         self.ghost_spawn_timer = 0
 
     def handle_events(self):
+        self.dt = self.clock.tick(60) / 8
         for event in pygame.event.get():
             # Menu state delegates to StartMenu
             if self.state == constants.GameState.MENU:
@@ -175,7 +182,7 @@ class HauntedKitchen:
 
         # Update player
         self.player.update(keys, [obj.obj_rect for obj in self.colliding_objects] + [
-                           obj.obj_rect for obj in self.stations] + [obj.obj_rect for obj in self.item_stations])
+                           obj.obj_rect for obj in self.stations] + [obj.obj_rect for obj in self.item_stations] + [self.hamburger_station.obj_rect], self.dt)
 
         # (Optional) Update fog of war if it needs an update step
         # If your FogOfWar has an update method that takes player pos, call it:
@@ -216,10 +223,10 @@ class HauntedKitchen:
             # Some ghost.update signatures may differ; call safely
             try:
                 ghost.update(self.last_known_location,
-                             self.footprints, self.player_in_zone)
+                             self.footprints, self.player_in_zone, self.dt)
             except TypeError:
                 ghost.update(self.last_known_location,
-                             None, self.player_in_zone)
+                             None, self.player_in_zone, self.dt)
 
             # Check collision with player
             dist = math.hypot(ghost.x - self.player.x, ghost.y - self.player.y)
@@ -243,10 +250,36 @@ class HauntedKitchen:
                 if distance < self.interaction_proximity:
                     closest_proximity_station.append([station, distance, "station"])
             
+            distance = self.hamburger_station.distance_to_rect((self.player.x, self.player.y))
+            if distance < self.interaction_proximity:
+                closest_proximity_station.append([self.hamburger_station, distance, "assembly"])
+            
             if not len(closest_proximity_station) == 0:
                 closest_station = min(closest_proximity_station, key=lambda x: x[1])
                 if closest_station[2] == "item":
-                    self.player.carrying = closest_station[0].ingredient                
+                    if not (self.player.has_item() and self.player.carrying.type == IngredientType.HAMBURGER):
+                        self.player.carrying = closest_station[0].ingredient  
+                elif closest_station[2] == "assembly":
+                    if self.player.has_item():
+                        ingredient = self.player.carrying
+                        if ingredient.type == IngredientType.BUN:
+                            self.player.carrying = None
+                            self.hamburger_station.hamburgerItems["bun"]["present"] = True
+                        elif ingredient.type == IngredientType.PATTY and ingredient.processed:
+                            self.player.carrying = None
+                            self.hamburger_station.hamburgerItems["patty"]["present"] = True
+                        elif ingredient.type == IngredientType.LETTUCE and ingredient.processed:
+                            self.player.carrying = None
+                            self.hamburger_station.hamburgerItems["lettuce"]["present"] = True
+                        elif ingredient.type == IngredientType.CHEESE:
+                            self.player.carrying = None
+                            self.hamburger_station.hamburgerItems["cheese"]["present"] = True
+                        elif ingredient.type == IngredientType.TOMATO and ingredient.processed:
+                            self.player.carrying = None
+                            self.hamburger_station.hamburgerItems["tomato"]["present"] = True 
+                    elif self.hamburger_station.deliverable():
+                        self.hamburger_station.clear()
+                        self.player.carrying = self.hamburger_station.hamburger          
                 elif self.player.carrying is not None and self.player.carrying.processed_by == closest_station[0].type and not self.player.carrying.processed:
                     # activate/progress
                     
@@ -384,6 +417,13 @@ class HauntedKitchen:
                                       self.player.y, self.vision_radius)
                 except TypeError:
                     item_station.draw(self.screen)
+                    
+        if self.is_in_vision(self.player.x, self.player.y, self.player.radius) or self.debug:
+            try:
+                self.hamburger_station.draw(self.screen, self.player.x,
+                                 self.player.y, self.vision_radius)
+            except TypeError:
+                self.hamburger_station.draw(self.screen)
 
         for footprint in self.footprints:
             if self.is_in_vision(footprint.x, footprint.y, footprint.radius) or self.debug:

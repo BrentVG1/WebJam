@@ -21,23 +21,26 @@ from enum import Enum
 
 class IngredientType(Enum):
     LETTUCE = 0
-    TOMATO = 1
-    BREAD = 2
-    MEAT = 3
-    CHEESE = 4
+    CHEESE = 1
+    TOMATO = 2
+    PATTY = 3
+    BUN = 4
     WATER = 5
     SALT = 6
+    HAMBURGER = 7
     
 class GameState(Enum):
     MENU = 0
     PLAYING = 1
     GAME_OVER = 2
     WIN = 3
+    
+
 
 # Recipes for dishes
 RECIPES = {
     "salad": {IngredientType.LETTUCE, IngredientType.TOMATO},
-    "burger": {IngredientType.BREAD, IngredientType.MEAT, IngredientType.CHEESE},
+    "burger": {IngredientType.BUN, IngredientType.PATTY, IngredientType.CHEESE},
     "soup": {IngredientType.TOMATO, IngredientType.WATER, IngredientType.SALT},
 }
 

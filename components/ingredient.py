@@ -4,14 +4,6 @@ from enum import Enum
 from constants import *
 
 
-class IngredientType(Enum):
-    LETTUCE = 0
-    CHEESE = 1
-    TOMATO = 2
-    PATTY = 3
-    BUN = 4
-
-
 class Ingredient:
     def __init__(self, x, y, ingredient_type, processed_by=None):
         self.x = x
@@ -49,6 +41,9 @@ class Ingredient:
             self.processed_image = pygame.transform.scale(self.processed_image, (self.radius * 4, self.radius * 4))
         elif ingredient_type == IngredientType.BUN:
             self.image = pygame.image.load("sprites/Buns.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
+        elif ingredient_type == IngredientType.HAMBURGER:
+            self.image = pygame.image.load("sprites/hamburger.png").convert_alpha()
             self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
         else:
             raise ValueError(f"Unknown ingredient type: {ingredient_type}")

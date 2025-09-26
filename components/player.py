@@ -73,24 +73,28 @@ class Player:
         return None
 
     # ---------- movement / collision ----------
-    def update(self, keys, rects):
+        # ---------- movement / collision ----------
+    def update(self, keys, rects, dt):
         original_x, original_y = self.x, self.y
         moved = False
 
+        # base speed (pixels per second)
+        move_speed = self.speed * dt  
+
         if keys[pygame.K_z] or keys[pygame.K_UP]:
-            self.y -= self.speed
+            self.y -= move_speed
             self.direction = "up"
             moved = True
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            self.y += self.speed
+            self.y += move_speed
             self.direction = "down"
             moved = True
         if keys[pygame.K_q] or keys[pygame.K_LEFT]:
-            self.x -= self.speed
+            self.x -= move_speed
             self.direction = "left"
             moved = True
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.x += self.speed
+            self.x += move_speed
             self.direction = "right"
             moved = True
             
@@ -101,7 +105,7 @@ class Player:
 
         # animatie cycle updaten
         if moved:
-            self.walk_cycle += self.walk_speed
+            self.walk_cycle += self.walk_speed * dt
         else:
             self.walk_cycle = 0
 
@@ -116,7 +120,8 @@ class Player:
                 self._resolve_collision(rect, original_x, original_y)
                 break
 
-        self.footprint_timer += 1
+        self.footprint_timer += dt
+
 
     def _resolve_collision(self, obstacle_rect, original_x, original_y):
         self.x, self.y = original_x, original_y
