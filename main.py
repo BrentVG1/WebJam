@@ -43,6 +43,10 @@ class HauntedKitchen:
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
         self.font_small = pygame.font.SysFont(None, 36)
+        self.background_img = pygame.image.load("sprites/vloer-tegel-modified.png").convert()
+        self.background_img = pygame.transform.scale(
+        self.background_img, (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
+    )
 
         self.fog_of_war = FogOfWar(
             constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, self.vision_radius)
@@ -321,11 +325,8 @@ class HauntedKitchen:
         self.draw_ui()
 
     def _draw_visible_background(self):
-        """Only draw the parts of the background that are visible"""
-        # Draw main kitchen area (simplified - in real game you'd want to clip this)
-        if self.is_in_vision(constants.SCREEN_WIDTH//2,  constants.SCREEN_HEIGHT//2, max(constants.SCREEN_WIDTH,  constants.SCREEN_HEIGHT)):
-            pygame.draw.rect(self.screen,  constants.DARK_GRAY, (0, 0,
-                             constants.SCREEN_WIDTH,  constants.SCREEN_HEIGHT))
+        self.screen.blit(self.background_img, (0, 0))
+
 
     def _draw_visible_objects(self):
         """Only draw objects that are within the player's vision"""
