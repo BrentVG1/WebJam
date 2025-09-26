@@ -44,6 +44,8 @@ class HauntedKitchen:
         self.font_medium = pygame.font.SysFont(None, 48)
         self.font_small = pygame.font.SysFont(None, 36)
 
+        self.playscream = bool
+
         self.fog_of_war = FogOfWar(
             constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, self.vision_radius)
 
@@ -298,9 +300,16 @@ class HauntedKitchen:
 
             if self.state == constants.GameState.PLAYING:
                 self.draw_game()
+
+                # set bool to true so it plays when it's game over
+                self.playscream = True
             elif self.state == constants.GameState.GAME_OVER:
                 self.draw_game()
                 self.draw_game_over()
+                # play death soundeffect
+                if self.playscream:
+                    play_soundeffect("scream")
+                self.playscream = False
             elif self.state == constants.GameState.WIN:
                 self.draw_game()
                 self.draw_win()
