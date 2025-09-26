@@ -106,8 +106,9 @@ class HauntedKitchen:
         ]
 
         self.colliding_objects = [
-            CollisionObject(300, 250, constants.SCREEN_WIDTH -
-                            600, 250),  # central table
+            CollisionObject(
+        300, 250, constants.SCREEN_WIDTH - 600, 250,
+        texture_path="tafel-modified.png"),
             CollisionObject(0, constants.SCREEN_HEIGHT -
                             self.safe_zone.height - 5, 100, 10),
             CollisionObject(200, constants.SCREEN_HEIGHT -
