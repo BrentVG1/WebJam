@@ -46,8 +46,9 @@ class HauntedKitchen:
         self.font_small = pygame.font.SysFont(None, 36)
         self.background_img = pygame.image.load("sprites/vloer-tegel-modified.png").convert()
         self.background_img = pygame.transform.scale(
-        self.background_img, (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
-    )
+        self.background_img, (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
+        # --- Safezone wood texture ---
+        self.wood_tile = pygame.image.load("sprites/wood_tile.png").convert()
 
         self.playscream = bool
 
@@ -391,72 +392,77 @@ class HauntedKitchen:
 
     def _draw_safe_zone(self):
         sz = self.safe_zone
-        surface = pygame.Surface((sz.width, sz.height), pygame.SRCALPHA)
+
+        # --- Draw wood texture background ---
+        wood_scaled = pygame.transform.scale(self.wood_tile, (sz.width, sz.height))
+        surface = wood_scaled.copy()
+
         t = pygame.time.get_ticks() * 0.002  # rustig tempo
 
-        # --- Check voor gevaar ---
+        # --- Check danger ---
         danger = any(
             ghost.current_type == GhostType.FOLLOWER and
             math.hypot(ghost.x - self.player.x, ghost.y - self.player.y) < 150
             for ghost in self.ghosts
         )
 
-        # --- Basis kleuren ---
+        # --- Base colors ---
         if danger:
-            base_colors = [(255, 80, 80), (255, 120, 120)]  # rood tinten
+            base_colors = [(255, 80, 80), (255, 120, 120)]
             text_color = (255, 200, 200)
         else:
-            # blauw-cyaan tinten
             base_colors = [(80, 180, 255), (120, 220, 255)]
             text_color = (255, 255, 255)
 
-        # Pulsing alpha voor zachte glow
-        pulse = 60 + 40 * math.sin(t)
+        # Make a transparent overlay for glow & effects
+        overlay = pygame.Surface((sz.width, sz.height), pygame.SRCALPHA)
 
-        # Glow laagjes
+        # Glow
+        pulse = 60 + 40 * math.sin(t)
         for i, col in enumerate(base_colors):
             alpha = int(pulse / (i + 1))
             glow_color = (*col, alpha)
-            pygame.draw.rect(surface, glow_color,
-                             (-i * 5, -i * 5, sz.width +
-                              i * 10, sz.height + i * 10),
-                             border_radius=25 + i * 5)
+            pygame.draw.rect(overlay, glow_color,
+                            (-i * 5, -i * 5, sz.width + i * 10, sz.height + i * 10),
+                            border_radius=25 + i * 5)
 
-        # --- Rustige golvende boven- en onderkant ---
-        wave_count = 8  # minder golven = rustiger
-        wave_height = 10  # kleinere amplitude
-        top_points = []
-        bottom_points = []
+        # Waves
+        wave_count = 8
+        wave_height = 10
+        top_points, bottom_points = [], []
         for i in range(wave_count + 1):
             x = i * (sz.width / wave_count)
-            top_y = wave_height * math.sin(t + i * 0.5)  # langzamere golf
-            bottom_y = sz.height - wave_height * \
-                math.sin(t + i * 0.5 + math.pi / 2)
+            top_y = wave_height * math.sin(t + i * 0.5)
+            bottom_y = sz.height - wave_height * math.sin(t + i * 0.5 + math.pi / 2)
             top_points.append((x, top_y))
             bottom_points.append((x, bottom_y))
         top_points = [(0, 0)] + top_points + [(sz.width, 0)]
-        bottom_points = [(0, sz.height)] + bottom_points + \
-            [(sz.width, sz.height)]
-        pygame.draw.polygon(surface, (*base_colors[0], 120), top_points)
-        pygame.draw.polygon(surface, (*base_colors[1], 120), bottom_points)
+        bottom_points = [(0, sz.height)] + bottom_points + [(sz.width, sz.height)]
+        pygame.draw.polygon(overlay, (*base_colors[0], 120), top_points)
+        pygame.draw.polygon(overlay, (*base_colors[1], 120), bottom_points)
 
-        # Subtiele fonkelende deeltjes
+        # Sparkles
         for _ in range(15):
             px = random.randint(0, sz.width)
             py = random.randint(0, sz.height)
             radius = random.randint(1, 3)
             alpha = random.randint(30, 100)
-            pygame.draw.circle(
-                surface, (255, 255, 255, alpha), (px, py), radius)
+            pygame.draw.circle(overlay, (255, 255, 255, alpha), (px, py), radius)
 
-        # Tekst "SAFE ZONE" midden in de zone
+        # Blit overlay on top of wood
+        surface.blit(overlay, (0, 0))
+
+        # SAFE ZONE text
         font = pygame.font.SysFont(None, 48)
         text = font.render("SAFE ZONE", True, text_color)
         text_rect = text.get_rect(center=(sz.width // 2, sz.height // 2))
         surface.blit(text, text_rect)
 
-        # Blit naar scherm
+        # Finally blit to screen
         self.screen.blit(surface, (sz.x, sz.y))
+
+
+
 
     def draw_ui(self):
         # Maak een aparte surface voor de UI
