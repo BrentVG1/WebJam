@@ -4,6 +4,7 @@ import pygame
 import random
 from constants import *
 from components.footprint import Footprint
+import os
 
 class Player:
     def __init__(self, x, y):
@@ -11,8 +12,7 @@ class Player:
         self.y = y
         self.speed = 5
         self.radius = 20
-        self.direction = "down"   # default kijkrichting
-        self.color = BLUE
+        self.direction = "down"
         self.footprint_timer = 0
         self.footprint_interval = 10
         self.carrying = None
@@ -20,6 +20,12 @@ class Player:
         # animatie helpers
         self.walk_cycle = 0
         self.walk_speed = 0.2
+
+        # --- Load sprites ---
+        self.sprites = {}
+        self.sprites["down"] = pygame.image.load(os.path.join("sprites", "rat_chef.png")).convert_alpha()
+        self.sprites["up"] = pygame.image.load(os.path.join("sprites", "rat_chef_back-1.png")).convert_alpha()
+        # You can later add "left" and "right" if needed
 
     # ---------- carry helpers ----------
     def has_item(self):
@@ -74,11 +80,9 @@ class Player:
             moved = True
         if keys[pygame.K_q] or keys[pygame.K_LEFT]:
             self.x -= self.speed
-            self.direction = "left"
             moved = True
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.x += self.speed
-            self.direction = "right"
             moved = True
             
         if keys[pygame.K_LSHIFT]:
@@ -110,69 +114,24 @@ class Player:
 
     # ---------- tekenen ----------
     def draw(self, screen):
-        # Schaduw
-        shadow_rect = pygame.Rect(self.x - self.radius, self.y + self.radius - 5,
-                                  self.radius * 2, 10)
-        pygame.draw.ellipse(screen, (40, 40, 40), shadow_rect)
-
-        # Regenboog aura
-        for i in range(6):
-            color = pygame.Color(0)
-            color.hsva = ((pygame.time.get_ticks() // 10 + i*60) % 360, 90, 100, 100)
-            pygame.draw.circle(screen, color, (int(self.x), int(self.y)), self.radius + 10 - i*2, 2)
-
-        # Lichaam
-        body_color = self.color
-        body_rect = pygame.Rect(self.x - self.radius//2, self.y - self.radius, self.radius, self.radius*2)
-        pygame.draw.ellipse(screen, body_color, body_rect)
-
-        # Groot hoofd
-        head_radius = int(self.radius * 1.3)
-        head_center = (int(self.x), int(self.y - self.radius))
-        pygame.draw.circle(screen, (240, 220, 180), head_center, head_radius)
-
-        # Ogen (kijken richting)
-        eye_offset = 6
-        if self.direction == "left":
-            dx, dy = -eye_offset, 0
-        elif self.direction == "right":
-            dx, dy = eye_offset, 0
-        elif self.direction == "up":
-            dx, dy = 0, -eye_offset
-        else:  # down
-            dx, dy = 0, eye_offset
-
-        pygame.draw.circle(screen, (255, 255, 255), (head_center[0] - 8, head_center[1] - 5), 8)
-        pygame.draw.circle(screen, (255, 255, 255), (head_center[0] + 8, head_center[1] - 5), 8)
-        pygame.draw.circle(screen, (0, 0, 0), (head_center[0] - 8 + dx//2, head_center[1] - 5 + dy//2), 4)
-        pygame.draw.circle(screen, (0, 0, 0), (head_center[0] + 8 + dx//2, head_center[1] - 5 + dy//2), 4)
-
-        # Mond (tong bij lopen)
-        if abs(math.sin(self.walk_cycle)) > 0.5:
-            pygame.draw.rect(screen, (255, 0, 0),
-                             (head_center[0] - 5, head_center[1] + 10, 10, 8))  # tong
+        # Draw the sprite instead of shapes
+        if self.direction in ["up", "down"]:
+            sprite = self.sprites[self.direction]
         else:
-            pygame.draw.arc(screen, (0, 0, 0),
-                            (head_center[0] - 10, head_center[1] + 5, 20, 10),
-                            math.pi, 2*math.pi, 2)  # smile
+            # fallback
+            sprite = self.sprites["down"]
 
-        # Armen zwaaien
-        offset = int(math.sin(self.walk_cycle * 2) * 12)
-        pygame.draw.line(screen, body_color, (self.x - self.radius//2, self.y),
-                         (self.x - self.radius - 10, self.y + offset), 6)
-        pygame.draw.line(screen, body_color, (self.x + self.radius//2, self.y),
-                         (self.x + self.radius + 10, self.y - offset), 6)
+        # Scale sprite bigger (e.g., 2x)
+        scale_factor = 2
+        sprite_scaled = pygame.transform.scale(sprite, (sprite.get_width() * scale_factor, sprite.get_height() * scale_factor))
 
-        # Benen overdreven
-        pygame.draw.line(screen, body_color, (self.x - 5, self.y + self.radius//2),
-                         (self.x - 15, self.y + self.radius*2 + offset), 8)
-        pygame.draw.line(screen, body_color, (self.x + 5, self.y + self.radius//2),
-                         (self.x + 15, self.y + self.radius*2 - offset), 8)
+        sprite_rect = sprite_scaled.get_rect(center=(int(self.x), int(self.y)))
+        screen.blit(sprite_scaled, sprite_rect)
 
-        # Item boven hoofd (draait)
+        # Draw carried item spinning above head
         if self.carrying:
             img = pygame.transform.scale(self.carrying.image, (40, 40))
             angle = (pygame.time.get_ticks() // 5) % 360
             img = pygame.transform.rotate(img, angle)
-            rect = img.get_rect(center=(int(self.x), int(self.y - self.radius*3)))
+            rect = img.get_rect(center=(int(self.x), int(self.y - self.radius*2)))
             screen.blit(img, rect)
