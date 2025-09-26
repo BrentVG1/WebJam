@@ -1,3 +1,5 @@
+import itertools
+
 SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
 FPS = 60
 
@@ -37,3 +39,6 @@ RECIPES = {
     "burger": {IngredientType.BREAD, IngredientType.MEAT, IngredientType.CHEESE},
     "soup": {IngredientType.TOMATO, IngredientType.WATER, IngredientType.SALT},
 }
+
+# Alternating cycle for footsteps
+play_footstep = itertools.cycle([False, True])

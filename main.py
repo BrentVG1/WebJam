@@ -16,6 +16,7 @@ from components.player import Player
 from components.music import play_music
 from components.start_menu import StartMenu
 from components.footprint import Footprint
+from components.soundEffects import play_soundeffect
 
 # --- Pygame init ---
 pygame.init()
@@ -186,6 +187,11 @@ class HauntedKitchen:
                     angle = math.degrees(math.atan2(-dy, dx))
                     self.footprints.append(
                         Footprint(self.player.x, self.player.y, angle))
+                    
+                    # play footstep sound for every other footprint created
+                    if next(constants.play_footstep):
+                        play_soundeffect("step")
+
                 self.player.footprint_timer = 0
                 self.last_known_location = self.player.x, self.player.y
         
