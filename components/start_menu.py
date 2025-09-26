@@ -11,7 +11,7 @@ class StartMenu:
         self.font_small = pygame.font.SysFont("timesnewroman", 28, bold=True)
         
         # Load the logo
-        self.logo = pygame.image.load("sprites/logo.png").convert_alpha()
+        self.logo = pygame.image.load("sprites/Logo.png").convert_alpha()
         self.logo = pygame.transform.smoothscale(self.logo, (350, 350))
 
         # Load background image

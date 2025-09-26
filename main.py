@@ -39,6 +39,7 @@ class HauntedKitchen:
         self.menu = StartMenu()
         self.player_in_zone = False
         self.last_known_location = None
+        self.interaction_proximity = 25
 
         self.font_large = pygame.font.SysFont(None, 72)
         self.font_medium = pygame.font.SysFont(None, 48)
@@ -77,34 +78,39 @@ class HauntedKitchen:
                   constants.SCREEN_HEIGHT - 100, GhostType.PATROLLER, self.safe_zone.height),
         ]
 
-        # Create ingredients
-        self.ingredients = []
 
         # Create cooking stations
         self.stations = [
-            CookingStation(constants.SCREEN_WIDTH - 400, 300, 100, 100, "chopping"),
+            CookingStation(constants.SCREEN_WIDTH - 400,
+                           300, 100, 100, "chopping"),
             CookingStation(400, 250, 100, 100, "cooking"),
-            CookingStation(constants.SCREEN_WIDTH - 50, constants.SCREEN_HEIGHT - self.safe_zone.height - 150, 50, 150, "baking"),
+            CookingStation(constants.SCREEN_WIDTH - 50, constants.SCREEN_HEIGHT -
+                           self.safe_zone.height - 150, 50, 150, "baking"),
             CookingStation(400,
                            constants.SCREEN_HEIGHT - self.safe_zone.height, 120, 100, "serving"),
         ]
 
         self.item_stations = [
-            ItemStation(0, 0, 100, 100, Ingredient(50 ,50, IngredientType.LETTUCE)),
-            ItemStation(100, 0, 100, 100, Ingredient(150 ,50, IngredientType.TOMATO)),
-            ItemStation(200, 0, 100, 100, Ingredient(250 ,50, IngredientType.CHEESE)),
-            ItemStation(constants.SCREEN_WIDTH - 100, 0, 100, 100, Ingredient(constants.SCREEN_WIDTH - 50 ,50, IngredientType.PATTY)),
-            ItemStation(500, 450, 100, 50, Ingredient(550 ,475, IngredientType.BUN)),
+            ItemStation(0, 0, 100, 100, Ingredient(
+                50, 50, IngredientType.LETTUCE)),
+            ItemStation(100, 0, 100, 100, Ingredient(
+                150, 50, IngredientType.TOMATO)),
+            ItemStation(200, 0, 100, 100, Ingredient(
+                250, 50, IngredientType.CHEESE)),
+            ItemStation(constants.SCREEN_WIDTH - 100, 0, 100, 100,
+                        Ingredient(constants.SCREEN_WIDTH - 50, 50, IngredientType.PATTY)),
+            ItemStation(500, 450, 100, 50, Ingredient(
+                550, 475, IngredientType.BUN)),
         ]
 
-
         self.colliding_objects = [
-            CollisionObject(300, 250, constants.SCREEN_WIDTH - 600, 250), # central table
+            CollisionObject(300, 250, constants.SCREEN_WIDTH -
+                            600, 250),  # central table
             CollisionObject(0, constants.SCREEN_HEIGHT -
                             self.safe_zone.height - 5, 100, 10),
             CollisionObject(200, constants.SCREEN_HEIGHT -
                             self.safe_zone.height - 5, constants.SCREEN_WIDTH - 400, 10),
-               CollisionObject(constants.SCREEN_WIDTH - 100, constants.SCREEN_HEIGHT -
+            CollisionObject(constants.SCREEN_WIDTH - 100, constants.SCREEN_HEIGHT -
                             self.safe_zone.height - 5, 100, 10),
         ]
 
@@ -165,11 +171,8 @@ class HauntedKitchen:
         keys = pygame.key.get_pressed()
 
         # Update player
-        self.player.update(keys, [obj.obj_rect for obj in self.colliding_objects] + [obj.obj_rect for obj in self.stations] + [obj.obj_rect for obj in self.item_stations])
-
-        # Player handles ingredient pickup internally (single carry slot)
-        if hasattr(self.player, "try_auto_pickup_nearby"):
-            self.player.try_auto_pickup_nearby(self.ingredients)
+        self.player.update(keys, [obj.obj_rect for obj in self.colliding_objects] + [
+                           obj.obj_rect for obj in self.stations] + [obj.obj_rect for obj in self.item_stations])
 
         # (Optional) Update fog of war if it needs an update step
         # If your FogOfWar has an update method that takes player pos, call it:
@@ -191,7 +194,7 @@ class HauntedKitchen:
                     angle = math.degrees(math.atan2(-dy, dx))
                     self.footprints.append(
                         Footprint(self.player.x, self.player.y, angle))
-                    
+
                     # play footstep sound for every other footprint created
                     if next(constants.play_footstep):
                         play_soundeffect("step")
@@ -202,7 +205,6 @@ class HauntedKitchen:
             # Update footprints (and remove faded ones)
         self.footprints = [f for f in self.footprints if f.update()]
 
-
         self.player_in_zone = self.safe_zone.in_zone(
             self.player.x, self.player.y)
 
@@ -210,9 +212,11 @@ class HauntedKitchen:
         for ghost in self.ghosts:
             # Some ghost.update signatures may differ; call safely
             try:
-                ghost.update(self.last_known_location, self.footprints, self.player_in_zone)
+                ghost.update(self.last_known_location,
+                             self.footprints, self.player_in_zone)
             except TypeError:
-                ghost.update(self.last_known_location, None, self.player_in_zone)
+                ghost.update(self.last_known_location,
+                             None, self.player_in_zone)
 
             # Check collision with player
             dist = math.hypot(ghost.x - self.player.x, ghost.y - self.player.y)
@@ -220,14 +224,23 @@ class HauntedKitchen:
                 self.state = constants.GameState.GAME_OVER
 
         # Station interaction
+        closest_proximity_station = []
         if keys[pygame.K_SPACE]:
+            for item_station in self.item_stations:
+                distance = item_station.distance_to_rect((self.player.x, self.player.y))
+                if distance < self.interaction_proximity:
+                    closest_proximity_station.append([item_station, "item"])
+                    
             for station in self.stations:
-                # Is player in station bounds?
-                in_station = (
-                    station.x < self.player.x < station.x + station.width
-                    and station.y < self.player.y < station.y + station.height
-                )
-                if in_station:
+                distance = station.distance_to_rect((self.player.x, self.player.y))
+                if distance < self.interaction_proximity:
+                    closest_proximity_station.append([station, "station"])
+            
+            if not len(closest_proximity_station) == 0:
+                closest_station = min(closest_proximity_station, key=lambda x: x[0].distance_to_rect((self.player.x, self.player.y)))
+                if closest_station[1] == "item":
+                    self.player.carrying = closest_station[0].ingredient                
+                else:
                     # activate/progress
                     if hasattr(station, "active"):
                         station.active = True
@@ -247,11 +260,11 @@ class HauntedKitchen:
 
                             if self.dishes_served >= self.dishes_needed:
                                 self.state = constants.GameState.WIN
-                else:
-                    if hasattr(station, "active"):
-                        station.active = False
-                    if hasattr(station, "progress"):
-                        station.progress = 0
+            else:
+                if hasattr(station, "active"):
+                    station.active = False
+                if hasattr(station, "progress"):
+                    station.progress = 0
 
         # Increase haunt level over time
         # Increase/decrease haunt level afhankelijk van safe zone
@@ -350,18 +363,9 @@ class HauntedKitchen:
                                  max(item_station.width, item_station.height)) or self.debug:
                 try:
                     item_station.draw(self.screen, self.player.x,
-                                 self.player.y, self.vision_radius)
+                                      self.player.y, self.vision_radius)
                 except TypeError:
                     item_station.draw(self.screen)
-
-        for ingredient in self.ingredients:
-            if (not ingredient.collected and self.is_in_vision(ingredient.x, ingredient.y, ingredient.radius)) or self.debug:
-                try:
-                    ingredient.draw(self.screen, self.player.x,
-                                    self.player.y, self.vision_radius)
-                except TypeError:
-                    # If your Ingredient.draw only takes (screen)
-                    ingredient.draw(self.screen)
 
         for footprint in self.footprints:
             if self.is_in_vision(footprint.x, footprint.y, footprint.radius) or self.debug:
@@ -394,7 +398,8 @@ class HauntedKitchen:
             base_colors = [(255, 80, 80), (255, 120, 120)]  # rood tinten
             text_color = (255, 200, 200)
         else:
-            base_colors = [(80, 180, 255), (120, 220, 255)]  # blauw-cyaan tinten
+            # blauw-cyaan tinten
+            base_colors = [(80, 180, 255), (120, 220, 255)]
             text_color = (255, 255, 255)
 
         # Pulsing alpha voor zachte glow
@@ -405,7 +410,8 @@ class HauntedKitchen:
             alpha = int(pulse / (i + 1))
             glow_color = (*col, alpha)
             pygame.draw.rect(surface, glow_color,
-                             (-i * 5, -i * 5, sz.width + i * 10, sz.height + i * 10),
+                             (-i * 5, -i * 5, sz.width +
+                              i * 10, sz.height + i * 10),
                              border_radius=25 + i * 5)
 
         # --- Rustige golvende boven- en onderkant ---
@@ -416,11 +422,13 @@ class HauntedKitchen:
         for i in range(wave_count + 1):
             x = i * (sz.width / wave_count)
             top_y = wave_height * math.sin(t + i * 0.5)  # langzamere golf
-            bottom_y = sz.height - wave_height * math.sin(t + i * 0.5 + math.pi / 2)
+            bottom_y = sz.height - wave_height * \
+                math.sin(t + i * 0.5 + math.pi / 2)
             top_points.append((x, top_y))
             bottom_points.append((x, bottom_y))
         top_points = [(0, 0)] + top_points + [(sz.width, 0)]
-        bottom_points = [(0, sz.height)] + bottom_points + [(sz.width, sz.height)]
+        bottom_points = [(0, sz.height)] + bottom_points + \
+            [(sz.width, sz.height)]
         pygame.draw.polygon(surface, (*base_colors[0], 120), top_points)
         pygame.draw.polygon(surface, (*base_colors[1], 120), bottom_points)
 
@@ -430,7 +438,8 @@ class HauntedKitchen:
             py = random.randint(0, sz.height)
             radius = random.randint(1, 3)
             alpha = random.randint(30, 100)
-            pygame.draw.circle(surface, (255, 255, 255, alpha), (px, py), radius)
+            pygame.draw.circle(
+                surface, (255, 255, 255, alpha), (px, py), radius)
 
         # Tekst "SAFE ZONE" midden in de zone
         font = pygame.font.SysFont(None, 48)
@@ -443,7 +452,8 @@ class HauntedKitchen:
 
     def draw_ui(self):
         # Maak een aparte surface voor de UI
-        ui_surface = pygame.Surface((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT), pygame.SRCALPHA)
+        ui_surface = pygame.Surface(
+            (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT), pygame.SRCALPHA)
 
         meter_width = 300
         meter_height = 20
@@ -457,15 +467,18 @@ class HauntedKitchen:
         # Dynamische kleur: groen → rood
         fear_ratio = self.haunt_level / self.max_haunt_level
         fill_width = int(meter_width * fear_ratio)
-        color = (int(255 * fear_ratio), int(255 * (1 - fear_ratio)), 0)  # Rood neemt toe, groen af
-        pygame.draw.rect(ui_surface, color, (meter_x, meter_y, fill_width, meter_height))
+        # Rood neemt toe, groen af
+        color = (int(255 * fear_ratio), int(255 * (1 - fear_ratio)), 0)
+        pygame.draw.rect(ui_surface, color,
+                         (meter_x, meter_y, fill_width, meter_height))
 
         # Border
         pygame.draw.rect(ui_surface, constants.WHITE,
                          (meter_x, meter_y, meter_width, meter_height), 2)
 
         # Label boven meter
-        haunt_text = self.font_small.render("Fear Meter", True, constants.WHITE)
+        haunt_text = self.font_small.render(
+            "Fear Meter", True, constants.WHITE)
         ui_surface.blit(
             haunt_text,
             (meter_x + meter_width - haunt_text.get_width(), meter_y - 30)

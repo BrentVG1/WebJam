@@ -35,3 +35,4 @@ class ItemStation(CollisionObject):
             pygame.draw.rect(screen, GREEN, (self.x, self.y + self.height - 10, self.width * (self.progress / 100), 10))
         
         self.ingredient.draw(screen, player_x, player_y, vision_radius)
+        
