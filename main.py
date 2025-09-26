@@ -42,7 +42,6 @@ class HauntedKitchen:
         self.font_medium = pygame.font.SysFont(None, 48)
         self.font_small = pygame.font.SysFont(None, 36)
 
-        # Fog of war system (stores its own radius)
         self.fog_of_war = FogOfWar(
             constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, self.vision_radius)
 
@@ -92,7 +91,7 @@ class HauntedKitchen:
             CookingStation(constants.SCREEN_WIDTH - 350,
                            200, 150, 100, "serving"),
         ]
-        
+
 
         self.colliding_objects = [
             CollisionObject(300, 250, constants.SCREEN_WIDTH - 600, 250), # central table
@@ -245,7 +244,12 @@ class HauntedKitchen:
                         station.progress = 0
 
         # Increase haunt level over time
-        self.haunt_level += 0.01
+        # Increase/decrease haunt level afhankelijk van safe zone
+        if self.player_in_zone:
+            self.haunt_level -= 0.05  # daalt in safe zone
+        else:
+            self.haunt_level += 0.1  # stijgt buiten safe zone
+        self.haunt_level = max(0, min(self.haunt_level, self.max_haunt_level))
 
         # Spawn new ghosts if haunt level is high
         self.ghost_spawn_timer += 1
@@ -298,22 +302,16 @@ class HauntedKitchen:
         pygame.display.flip()
 
     def draw_game(self):
-        # Clear screen with black (this will be our fog)
+        # Alles tekenen
         self.screen.fill(constants.BLACK)
-
-        # 1. Draw visible portions of the kitchen background
         self._draw_visible_background()
-
-        # 2. Only draw objects that are in vision
         self._draw_visible_objects()
-
-        # 3. Apply fog of war (for gradient edges)
         if not self.debug:
             self.fog_of_war.draw(self.screen, self.player.x, self.player.y)
         self._draw_safe_zone()
         self.player.draw(self.screen)
 
-        # 4. Draw UI (always visible)
+        # UI altijd **laatste**
         self.draw_ui()
 
     def _draw_visible_background(self):
@@ -367,43 +365,57 @@ class HauntedKitchen:
         self.safe_zone.draw(self.screen)
 
     def draw_ui(self):
+        # Maak een aparte surface voor de UI
+        ui_surface = pygame.Surface((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT), pygame.SRCALPHA)
+
         meter_width = 300
         meter_height = 20
         meter_x = constants.SCREEN_WIDTH - meter_width - 50
         meter_y = 30
 
-        # Background
-        pygame.draw.rect(self.screen, constants.DARK_GRAY,
+        # Achtergrond meter
+        pygame.draw.rect(ui_surface, constants.DARK_GRAY,
                          (meter_x, meter_y, meter_width, meter_height))
 
-        # Fill based on haunt level
-        fill_width = int(
-            meter_width * (self.haunt_level / self.max_haunt_level))
-        pygame.draw.rect(self.screen, constants.RED,
-                         (meter_x, meter_y, fill_width, meter_height))
+        # Dynamische kleur: groen → rood
+        fear_ratio = self.haunt_level / self.max_haunt_level
+        fill_width = int(meter_width * fear_ratio)
+        color = (int(255 * fear_ratio), int(255 * (1 - fear_ratio)), 0)  # Rood neemt toe, groen af
+        pygame.draw.rect(ui_surface, color, (meter_x, meter_y, fill_width, meter_height))
 
         # Border
-        pygame.draw.rect(self.screen, constants.WHITE,
+        pygame.draw.rect(ui_surface, constants.WHITE,
                          (meter_x, meter_y, meter_width, meter_height), 2)
 
-        # Labels
-        haunt_text = self.font_small.render(
-            "Haunt Level", True, constants.WHITE)
-        self.screen.blit(haunt_text, (meter_x, meter_y - 30))
+        # Label boven meter
+        haunt_text = self.font_small.render("Fear Meter", True, constants.WHITE)
+        ui_surface.blit(
+            haunt_text,
+            (meter_x + meter_width - haunt_text.get_width(), meter_y - 30)
+        )
 
+        # Andere info linksboven
         dishes_text = self.font_small.render(
-            f"Dishes: {self.dishes_served}/{self.dishes_needed}", True, constants.WHITE)
-        self.screen.blit(dishes_text, (50, 30))
+            f"Dishes: {self.dishes_served}/{self.dishes_needed}", True, constants.WHITE
+        )
+        ui_surface.blit(dishes_text, (50, 30))
 
         ghosts_text = self.font_small.render(
-            f"Ghosts: {len(self.ghosts)}", True, constants.WHITE)
-        self.screen.blit(ghosts_text, (50, 70))
+            f"Ghosts: {len(self.ghosts)}", True, constants.WHITE
+        )
+        ui_surface.blit(ghosts_text, (50, 70))
 
         if self.vision_radius == 2000:
             debug_text = self.font_small.render(
-                "DEBUG: Full Visibility", True, constants.YELLOW)
-            self.screen.blit(debug_text, (constants.SCREEN_WIDTH //
-                             2 - debug_text.get_width() // 2, 100))
+                "DEBUG: Full Visibility", True, constants.YELLOW
+            )
+            ui_surface.blit(
+                debug_text,
+                (constants.SCREEN_WIDTH // 2 - debug_text.get_width() // 2, 100),
+            )
+
+        # Blit de UI surface **bovenop alles**, inclusief fog
+        self.screen.blit(ui_surface, (0, 0))
 
     def draw_game_over(self):
         overlay = pygame.Surface(
