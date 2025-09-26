@@ -29,7 +29,7 @@ pygame.mixer.music.set_endevent(MUSIC_END)
 
 class HauntedKitchen:
     def __init__(self):
-        self.vision_radius = 350
+        self.vision_radius = 300
         self.screen = pygame.display.set_mode(
             (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
         pygame.display.set_caption("Haunted Kitchen")
@@ -86,21 +86,20 @@ class HauntedKitchen:
             CookingStation(constants.SCREEN_WIDTH - 400,
                            300, 100, 100, "chopping"),
             CookingStation(400, 250, 100, 100, "cooking"),
-            CookingStation(constants.SCREEN_WIDTH - 50, constants.SCREEN_HEIGHT -
-                           self.safe_zone.height - 150, 50, 150, "baking"),
+  
             CookingStation(400,
                            constants.SCREEN_HEIGHT - self.safe_zone.height, 120, 100, "serving"),
         ]
 
         self.item_stations = [
             ItemStation(0, 0, 100, 100, Ingredient(
-                50, 50, IngredientType.LETTUCE)),
+                50, 50, IngredientType.LETTUCE, "chopping")),
             ItemStation(100, 0, 100, 100, Ingredient(
-                150, 50, IngredientType.TOMATO)),
+                150, 50, IngredientType.TOMATO, "chopping")),
             ItemStation(200, 0, 100, 100, Ingredient(
                 250, 50, IngredientType.CHEESE)),
             ItemStation(constants.SCREEN_WIDTH - 100, 0, 100, 100,
-                        Ingredient(constants.SCREEN_WIDTH - 50, 50, IngredientType.PATTY)),
+                        Ingredient(constants.SCREEN_WIDTH - 50, 50, IngredientType.PATTY, "cooking")),
             ItemStation(500, 450, 100, 50, Ingredient(
                 550, 475, IngredientType.BUN)),
         ]
@@ -273,7 +272,7 @@ class HauntedKitchen:
         if self.player_in_zone:
             self.haunt_level -= 0.05  # daalt in safe zone
         else:
-            self.haunt_level += 0.1  # stijgt buiten safe zone
+            self.haunt_level += 0.03  # stijgt buiten safe zone
         self.haunt_level = max(0, min(self.haunt_level, self.max_haunt_level))
 
         # Spawn new ghosts if haunt level is high

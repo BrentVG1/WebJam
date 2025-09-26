@@ -13,13 +13,15 @@ class IngredientType(Enum):
 
 
 class Ingredient:
-    def __init__(self, x, y, ingredient_type):
+    def __init__(self, x, y, ingredient_type, processed_by=None):
         self.x = x
         self.y = y
         self.type = ingredient_type
         self.radius = 15
         self.collected = False
         self.visible = False
+        self.processed = False
+        self.processed_by = processed_by
 
         # Load the correct PNG image based on type
         # if ingredient_type == IngredientType.VEGETABLE:
@@ -27,7 +29,29 @@ class Ingredient:
         # elif ingredient_type == IngredientType.MEAT:
         #     self.image = pygame.image.load("sprites/vegetable/tile001.png").convert_alpha()
         # else:  # SPICE
-        self.image = pygame.image.load("sprites/vegetable/tile002.png").convert_alpha()
+        if ingredient_type == IngredientType.LETTUCE:
+            self.image = pygame.image.load("sprites/KropSla.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.processed_image = pygame.image.load("sprites/GesnedenSla.png").convert_alpha()
+            self.processed_image = pygame.transform.scale(self.image, (self.radius, self.radius))
+        elif ingredient_type == IngredientType.CHEESE:
+            self.image = pygame.image.load("sprites/CheddarKaas.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+        elif ingredient_type == IngredientType.TOMATO:
+            self.image = pygame.image.load("sprites/Tomaat.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.processed_image = pygame.image.load("sprites/GesnedenTomaten-1.png").convert_alpha()
+            self.processed_image = pygame.transform.scale(self.image, (self.radius, self.radius))
+        elif ingredient_type == IngredientType.PATTY:
+            self.image = pygame.image.load("sprites/Patty.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+            self.processed_image = pygame.image.load("sprites/gebakkenPatty.png").convert_alpha()
+            self.processed_image = pygame.transform.scale(self.image, (self.radius, self.radius))
+        elif ingredient_type == IngredientType.BUN:
+            self.image = pygame.image.load("sprites/Buns.png").convert_alpha()
+            self.image = pygame.transform.scale(self.image, (self.radius, self.radius))
+        else:
+            raise ValueError(f"Unknown ingredient type: {ingredient_type}")
 
         # Scale image to match the "radius"
         self.image = pygame.transform.scale(self.image, (self.radius * 4, self.radius * 4))
